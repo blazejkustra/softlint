@@ -1,6 +1,6 @@
 {
-  "name": "softlint",
-  "version": "1.0.0",
+  "name": "@blazejkustra/softlint",
+  "version": "0.0.1",
   "description": "Enforce the rules a linter can't. A GitHub Action that reviews pull requests against plain-English rules, judged by Jev.",
   "license": "MIT",
   "type": "module",
@@ -37,5 +37,11 @@
     "tsx": "4.23.13",
     "typescript": "7.0.2"
   },
-  "packageManager": "pnpm@8.13.1"
+  "packageManager": "pnpm@8.13.1",
+  "files": [
+    "dist",
+    "softlint.schema.json",
+    "README.md",
+    "LICENSE"
+  ]
 }
