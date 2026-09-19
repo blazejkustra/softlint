@@ -1,0 +1,15 @@
+# softlint reviewing this repo's own demo PRs, set up exactly like the README tells users to.
+name: softlint
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  softlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: blazejkustra/softlint@v1
+        with:
+          jev-api-key: ${{ secrets.JEV_API_KEY }}
