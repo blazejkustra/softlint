@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "User-facing messages must not blame the user or use technical jargon, and must tell them what to do next.",
+      "files": [
+        "**/*.{tsx,jsx,vue,svelte}"
+      ]
+    }
+  ]
+}

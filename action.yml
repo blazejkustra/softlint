@@ -1,0 +1,34 @@
+name: softlint
+description: Enforce the rules a linter can't. Reviews pull requests against plain-English rules in softlint.json, judged by Jev.
+author: Blazej Kustra
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  jev-api-key:
+    description: Your Jev API key (store it as a repository secret, e.g. JEV_API_KEY).
+    required: true
+  rules:
+    description: Path to the rules file.
+    default: softlint.json
+  threshold:
+    description: How sure Jev must be (0–1) before softlint comments.
+    default: "0.8"
+  fail-on-findings:
+    description: Fail the check when there are findings (turns softlint from a reviewer into a gate).
+    default: "false"
+  model:
+    description: Jev model to use.
+    default: jev-latest
+  github-token:
+    description: Token used to read the diff and post the review.
+    default: ${{ github.token }}
+
+outputs:
+  findings:
+    description: Number of findings at or above the threshold.
+
+runs:
+  using: node24
+  main: dist/index.js

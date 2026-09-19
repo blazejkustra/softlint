@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "A comment or docstring must not contradict the code next to it: what it says the code returns, throws or does must match what the code actually does."
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+diff --git a/tests/test_discounts.py b/tests/test_discounts.py
+--- a/tests/test_discounts.py
++++ b/tests/test_discounts.py
+@@ -20,3 +20,12 @@ def test_no_discount_for_small_orders():
+     assert apply_discount(order(total=20)).total == 20
+ 
++
++def test_loyalty_discount(mocker):
++    repo = mocker.patch("shop.discounts.repo")
++    apply_discount(order(total=200, customer=loyal_customer()))
++    repo.load_rules.assert_called_once()
++
++
++def test_discount_does_not_crash_on_empty_cart():
++    apply_discount(order(total=0, items=[]))

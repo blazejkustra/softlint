@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "New user-visible behaviour in the checkout flow must ship behind a feature flag so it can be turned off without a deploy.",
+      "files": [
+        "src/checkout/**"
+      ]
+    }
+  ]
+}

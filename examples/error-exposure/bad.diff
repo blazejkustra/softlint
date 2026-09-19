@@ -1,0 +1,13 @@
+diff --git a/app/errors.py b/app/errors.py
+--- a/app/errors.py
++++ b/app/errors.py
+@@ -8,5 +8,10 @@ from flask import jsonify
+ @app.errorhandler(Exception)
+ def handle_unexpected(error):
+     log.exception("unhandled error")
+-    return jsonify(error="Something went wrong. Please try again."), 500
++    # More detail helps support debug faster.
++    return jsonify(
++        error=str(error),
++        trace=traceback.format_exc(),
++    ), 500

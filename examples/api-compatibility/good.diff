@@ -1,0 +1,13 @@
+diff --git a/src/api/v1/serializers/order.ts b/src/api/v1/serializers/order.ts
+--- a/src/api/v1/serializers/order.ts
++++ b/src/api/v1/serializers/order.ts
+@@ -4,9 +4,10 @@ export function serializeOrder(order: Order): OrderResponse {
+   return {
+     id: order.id,
+     status: order.status,
+     total: order.totalCents,
++    currency: order.currency,
+     placedAt: order.createdAt.toISOString(),
+     items: order.items.map(serializeItem),
+   };
+ }

@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Error messages returned to users must not expose internals such as stack traces, SQL, file paths, internal hostnames or raw exception text."
+    }
+  ]
+}

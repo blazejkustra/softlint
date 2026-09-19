@@ -1,0 +1,14 @@
+diff --git a/internal/signup/handler.go b/internal/signup/handler.go
+--- a/internal/signup/handler.go
++++ b/internal/signup/handler.go
+@@ -40,6 +40,12 @@ func (h *Handler) Signup(w http.ResponseWriter, r *http.Request) {
+ 	user, err := h.users.Create(r.Context(), req)
+ 	if err != nil {
++		h.log.Error("signup failed",
++			"email", req.Email,
++			"phone", req.Phone,
++			"err", err,
++		)
+ 		http.Error(w, "could not create account", http.StatusInternalServerError)
+ 		return
+ 	}

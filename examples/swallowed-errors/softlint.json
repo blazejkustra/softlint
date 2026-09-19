@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Errors must not be swallowed silently: a catch block must log, rethrow, or return an error that the caller handles."
+    }
+  ]
+}

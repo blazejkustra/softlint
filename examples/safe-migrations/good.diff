@@ -1,0 +1,9 @@
+diff --git a/db/migrations/20260919_add_user_name_parts.sql b/db/migrations/20260919_add_user_name_parts.sql
+new file mode 100644
+--- /dev/null
++++ b/db/migrations/20260919_add_user_name_parts.sql
+@@ -0,0 +1,4 @@
++-- Split full names into first/last. Step 1 of 3: add the new columns;
++-- backfill in a job, and drop `name` only after no deployed code reads it.
++ALTER TABLE users ADD COLUMN first_name text;
++ALTER TABLE users ADD COLUMN last_name text;

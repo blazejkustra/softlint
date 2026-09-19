@@ -1,0 +1,40 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+      - name: dist/ is up to date
+        run: git diff --exit-code dist/ || (echo "Run 'pnpm build' and commit dist/." && exit 1)
+      - run: pnpm test
+
+  # Runs the examples catalog against the real Jev API. Skipped until a JEV_API_KEY secret exists.
+  eval:
+    runs-on: ubuntu-latest
+    env:
+      JEV_API_KEY: ${{ secrets.JEV_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        if: env.JEV_API_KEY != ''
+      - uses: pnpm/action-setup@v4
+        if: env.JEV_API_KEY != ''
+      - uses: actions/setup-node@v4
+        if: env.JEV_API_KEY != ''
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile && pnpm eval
+        if: env.JEV_API_KEY != ''

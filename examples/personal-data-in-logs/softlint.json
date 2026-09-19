@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Personal data (emails, names, phone numbers, street addresses, payment card details) must not be written to logs or sent to analytics or other third-party services."
+    }
+  ]
+}

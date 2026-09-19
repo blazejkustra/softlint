@@ -1,0 +1,15 @@
+diff --git a/tests/test_discounts.py b/tests/test_discounts.py
+--- a/tests/test_discounts.py
++++ b/tests/test_discounts.py
+@@ -20,3 +20,12 @@ def test_no_discount_for_small_orders():
+     assert apply_discount(order(total=20)).total == 20
+ 
++
++def test_loyalty_discount():
++    result = apply_discount(order(total=200, customer=loyal_customer()))
++    assert result.total == 180
++    assert result.applied == ["loyalty-10"]
++
++
++def test_empty_cart_has_zero_total():
++    assert apply_discount(order(total=0, items=[])).total == 0

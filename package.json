@@ -1,0 +1,41 @@
+{
+  "name": "softlint",
+  "version": "1.0.0",
+  "description": "Enforce the rules a linter can't. A GitHub Action that reviews pull requests against plain-English rules, judged by Jev.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "softlint": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test test/*.test.ts",
+    "eval": "tsx --env-file-if-exists=.env test/eval.ts",
+    "softlint": "tsx --env-file-if-exists=.env src/cli.ts"
+  },
+  "engines": {
+    "node": ">=22.9"
+  },
+  "keywords": [
+    "github-action",
+    "code-review",
+    "lint",
+    "jev",
+    "typesafe",
+    "ai"
+  ],
+  "dependencies": {
+    "@actions/core": "3.0.1",
+    "@typesafe-ai/sdk": "0.6.0",
+    "picomatch": "4.0.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.2",
+    "@types/picomatch": "4.0.3",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.13",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "pnpm@8.13.1"
+}

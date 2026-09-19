@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Existing fields in public API responses must not be removed or renamed, or change type or meaning, without a new API version. Adding new fields is fine.",
+      "files": [
+        "src/api/**"
+      ]
+    }
+  ]
+}

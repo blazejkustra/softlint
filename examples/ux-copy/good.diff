@@ -1,0 +1,12 @@
+diff --git a/src/components/BookingForm.tsx b/src/components/BookingForm.tsx
+--- a/src/components/BookingForm.tsx
++++ b/src/components/BookingForm.tsx
+@@ -52,7 +52,7 @@ export function BookingForm() {
+   if (!isAvailable(date)) {
+     return (
+       <Alert tone="error">
+-        That date is fully booked.
++        That date is fully booked. Pick another day, or join the waitlist and we'll email you if a spot opens.
+       </Alert>
+     );
+   }

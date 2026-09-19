@@ -1,0 +1,9 @@
+diff --git a/db/migrations/20260919_rename_user_name.sql b/db/migrations/20260919_rename_user_name.sql
+new file mode 100644
+--- /dev/null
++++ b/db/migrations/20260919_rename_user_name.sql
+@@ -0,0 +1,4 @@
++-- Split full names into first/last.
++ALTER TABLE users RENAME COLUMN name TO full_name;
++ALTER TABLE users ADD COLUMN first_name text NOT NULL;
++ALTER TABLE users ADD COLUMN last_name text NOT NULL;

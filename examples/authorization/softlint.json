@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Every endpoint that reads or changes one user's data must check that the requester is allowed to access that specific record (for example, that it belongs to them), not just that they are logged in."
+    }
+  ]
+}

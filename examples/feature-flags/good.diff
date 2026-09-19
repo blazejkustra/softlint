@@ -1,0 +1,12 @@
+diff --git a/src/checkout/Checkout.tsx b/src/checkout/Checkout.tsx
+--- a/src/checkout/Checkout.tsx
++++ b/src/checkout/Checkout.tsx
+@@ -30,6 +30,8 @@ export function Checkout({ cart }: Props) {
+   return (
+     <Page title="Checkout">
+       <CartSummary cart={cart} />
++      {flags.enabled("express-pay") && <ExpressPayButtons cart={cart} />}
++      {flags.enabled("pay-later") && <PayLaterOffer total={cart.total} />}
+       <AddressForm />
+       <PaymentForm />
+     </Page>

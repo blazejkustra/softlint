@@ -1,0 +1,17 @@
+diff --git a/billing/refunds.py b/billing/refunds.py
+--- a/billing/refunds.py
++++ b/billing/refunds.py
+@@ -12,6 +12,17 @@ def refund_order(order):
+     payment = Payment.objects.get(order=order)
++    # Stripe times out under load, so try a few times. The idempotency key makes
++    # every attempt the same refund, so a retry can never refund twice.
++    for attempt in range(3):
++        try:
++            return stripe.Refund.create(
++                payment_intent=payment.intent_id,
++                amount=order.total_cents,
++                idempotency_key=f"refund-{order.id}",
++            )
++        except stripe.error.APIConnectionError:
++            time.sleep(2 ** attempt)
++    raise RefundFailed(order.id)

@@ -1,0 +1,15 @@
+diff --git a/src/webhooks/stripe.ts b/src/webhooks/stripe.ts
+--- a/src/webhooks/stripe.ts
++++ b/src/webhooks/stripe.ts
+@@ -15,8 +15,12 @@ export async function stripeWebhook(req: Request, res: Response) {
+   const event = verify(req);
+ 
+   if (event.type === "payment_intent.succeeded") {
+-    await markPaid(event.data.object.id);
++    try {
++      await markPaid(event.data.object.id);
++    } catch {
++      // ignore
++    }
+   }
+   res.sendStatus(200);

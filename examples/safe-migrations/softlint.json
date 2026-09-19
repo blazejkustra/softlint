@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Database migrations must keep working with the code that is currently deployed: do not drop or rename columns or tables that existing code still uses, and add new columns as nullable or with a default.",
+      "files": [
+        "**/migrations/**"
+      ]
+    }
+  ]
+}

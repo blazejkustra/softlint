@@ -1,0 +1,55 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Every endpoint that reads or changes one user's data must check that the requester is allowed to access that specific record (for example, that it belongs to them), not just that they are logged in."
+    },
+    {
+      "rule": "Personal data (emails, names, phone numbers, street addresses, payment card details) must not be written to logs or sent to analytics or other third-party services."
+    },
+    {
+      "rule": "Error messages returned to users must not expose internals such as stack traces, SQL, file paths, internal hostnames or raw exception text."
+    },
+    {
+      "rule": "Operations with real-world side effects (charging or refunding money, sending emails or SMS, calling webhooks) must not be retried or repeated without an idempotency key or a duplicate check."
+    },
+    {
+      "rule": "Errors must not be swallowed silently: a catch block must log, rethrow, or return an error that the caller handles."
+    },
+    {
+      "rule": "Existing fields in public API responses must not be removed or renamed, or change type or meaning, without a new API version. Adding new fields is fine.",
+      "files": [
+        "src/api/**"
+      ]
+    },
+    {
+      "rule": "A comment or docstring must not contradict the code next to it: what it says the code returns, throws or does must match what the code actually does."
+    },
+    {
+      "rule": "User-facing messages must not blame the user or use technical jargon, and must tell them what to do next.",
+      "files": [
+        "**/*.{tsx,jsx,vue,svelte}"
+      ]
+    },
+    {
+      "rule": "Database migrations must keep working with the code that is currently deployed: do not drop or rename columns or tables that existing code still uses, and add new columns as nullable or with a default.",
+      "files": [
+        "**/migrations/**"
+      ]
+    },
+    {
+      "rule": "New user-visible behaviour in the checkout flow must ship behind a feature flag so it can be turned off without a deploy.",
+      "files": [
+        "src/checkout/**"
+      ]
+    },
+    {
+      "rule": "Tests must assert on observable behaviour (return values, state, output). A test that only runs the code, or only checks that a mock was called, does not count.",
+      "files": [
+        "tests/**",
+        "**/*.test.*",
+        "**/*_test.*"
+      ]
+    }
+  ]
+}

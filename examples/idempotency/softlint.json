@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Operations with real-world side effects (charging or refunding money, sending emails or SMS, calling webhooks) must not be retried or repeated without an idempotency key or a duplicate check."
+    }
+  ]
+}

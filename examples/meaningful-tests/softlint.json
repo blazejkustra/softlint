@@ -1,0 +1,13 @@
+{
+  "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
+  "rules": [
+    {
+      "rule": "Tests must assert on observable behaviour (return values, state, output). A test that only runs the code, or only checks that a mock was called, does not count.",
+      "files": [
+        "tests/**",
+        "**/*.test.*",
+        "**/*_test.*"
+      ]
+    }
+  ]
+}

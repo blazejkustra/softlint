@@ -1,0 +1,16 @@
+diff --git a/src/webhooks/stripe.ts b/src/webhooks/stripe.ts
+--- a/src/webhooks/stripe.ts
++++ b/src/webhooks/stripe.ts
+@@ -15,8 +15,13 @@ export async function stripeWebhook(req: Request, res: Response) {
+   const event = verify(req);
+ 
+   if (event.type === "payment_intent.succeeded") {
+-    await markPaid(event.data.object.id);
++    try {
++      await markPaid(event.data.object.id);
++    } catch (error) {
++      logger.error("markPaid failed", { eventId: event.id, error });
++      return res.sendStatus(500); // Stripe retries failed webhooks
++    }
+   }
+   res.sendStatus(200);
