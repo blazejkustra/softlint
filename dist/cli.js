@@ -2613,7 +2613,8 @@ var diff = values.diff ? readFileSync(values.diff, "utf8") : readFileSync(0, "ut
 var rules = parseRules(readFileSync(values.rules, "utf8"), values.rules);
 var threshold = Number(values.threshold);
 var { findings, judgments, hunks } = await review(diff, rules, jevAsk(apiKey), threshold);
-var shown = values.all ? [...judgments].sort((a, b) => b.probability - a.probability) : findings;
+var located = new Map(findings.map((f) => [`${f.hunk.file}:${f.hunk.line}:${f.rule.text}`, f]));
+var shown = values.all ? judgments.map((j) => located.get(`${j.hunk.file}:${j.hunk.line}:${j.rule.text}`) ?? j).sort((a, b) => b.probability - a.probability) : findings;
 for (const j of shown) {
   const mark = j.probability >= threshold ? "\u2717" : " ";
   console.log(`${mark} ${String(Math.round(j.probability * 100)).padStart(3)}%  ${j.hunk.file}:${j.line}  ${j.rule.text}`);

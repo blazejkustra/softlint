@@ -33,7 +33,11 @@ const rules = parseRules(readFileSync(values.rules!, "utf8"), values.rules);
 const threshold = Number(values.threshold);
 const { findings, judgments, hunks } = await review(diff, rules, jevAsk(apiKey), threshold);
 
-const shown = values.all ? [...judgments].sort((a, b) => b.probability - a.probability) : findings;
+// With --all, also list what fell below the threshold (findings keep the exact line they were located at).
+const located = new Map(findings.map((f) => [`${f.hunk.file}:${f.hunk.line}:${f.rule.text}`, f]));
+const shown = values.all
+  ? judgments.map((j) => located.get(`${j.hunk.file}:${j.hunk.line}:${j.rule.text}`) ?? j).sort((a, b) => b.probability - a.probability)
+  : findings;
 for (const j of shown) {
   const mark = j.probability >= threshold ? "✗" : " ";
   console.log(`${mark} ${String(Math.round(j.probability * 100)).padStart(3)}%  ${j.hunk.file}:${j.line}  ${j.rule.text}`);
