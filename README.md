@@ -167,7 +167,7 @@ PR diff ─► pieces ─► (piece × rule) yes/no questions ─► Jev ─► 
    ones are annotated and the rest are in the summary.
 
 A typical PR is **two Jev requests**. The demo PR in this repo (14 files, 30 changed pieces × 11 rules)
-costs about $0.0006 per run: Jev charges $0.042 per million input tokens, and output is free. Every run
+costs about **$0.001** per run (2 Jev requests, ~27k input tokens): Jev charges $0.042 per million input tokens, and output is free. Every run
 prints its cost in the log and the job summary, and sets it as the `cost-usd` output.
 
 The code is small on purpose: [`rules.ts`](src/rules.ts) · [`diff.ts`](src/diff.ts) ·
