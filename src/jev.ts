@@ -107,8 +107,21 @@ export async function locate(findings: Judgment[], ask: Ask): Promise<Judgment[]
 /** `L42` → the code on line 42, for a finding's added lines (capped at Jev's choice limit). */
 const options = (f: Judgment): [string, string][] => f.hunk.added.slice(0, MAX_CHOICES).map((a) => [`L${a.line}`, a.text]);
 
-/** `Ask` backed by the real Jev API. */
-export function jevAsk(apiKey: string, model = "jev-latest"): Ask {
+/** Jev's price: $0.042 per million input tokens; output tokens are free. */
+export const USD_PER_INPUT_TOKEN = 0.042 / 1_000_000;
+
+export type Usage = { requests: number; inputTokens: number; costUsd: number };
+
+/** `Ask` backed by the real Jev API. `usage` adds up what every request cost. */
+export function jevAsk(apiKey: string, model = "jev-latest"): Ask & { usage: Usage } {
   const client = new TypeSafeClient({ apiKey, defaultModel: model, retry: { maxRetries: 5 }, timeout: 60_000 });
-  return async (state, questions) => (await client.systemOne({ state: state as never, questions })).answers as never;
+  const usage: Usage = { requests: 0, inputTokens: 0, costUsd: 0 };
+  const ask: Ask = async (state, questions) => {
+    const response = await client.systemOne({ state: state as never, questions });
+    usage.requests++;
+    usage.inputTokens += response.usage.input_tokens;
+    usage.costUsd = usage.inputTokens * USD_PER_INPUT_TOKEN;
+    return response.answers as never;
+  };
+  return Object.assign(ask, { usage });
 }

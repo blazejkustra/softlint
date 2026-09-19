@@ -22,12 +22,14 @@ inputs:
     description: Jev model to use.
     default: jev-latest
   github-token:
-    description: Token used to read the diff and post the review.
+    description: Token used to read the pull request's diff (and the rules file when there's no checkout).
     default: ${{ github.token }}
 
 outputs:
   findings:
     description: Number of findings at or above the threshold.
+  cost-usd:
+    description: What this run cost in Jev usage, in US dollars.
 
 runs:
   using: node24

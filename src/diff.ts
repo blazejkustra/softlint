@@ -8,7 +8,7 @@ export type Hunk = {
   added: { line: number; text: string }[];
 };
 
-// Generated or binary files are never worth a review comment.
+// Generated or binary files are never worth a finding.
 const SKIP = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|Cargo\.lock|poetry\.lock|go\.sum)$|\.(png|jpe?g|gif|svg|ico|webp|pdf|zip|min\.js|map|snap)$|(^|\/)dist\//;
 
 type Line = { raw: string; newLine?: number };

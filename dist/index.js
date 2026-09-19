@@ -21253,59 +21253,35 @@ function info(message) {
 import { existsSync as existsSync2, readFileSync } from "node:fs";
 
 // src/github.ts
-import { createHash } from "node:crypto";
-
-// src/diff.ts
-var SKIP = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|Cargo\.lock|poetry\.lock|go\.sum)$|\.(png|jpe?g|gif|svg|ico|webp|pdf|zip|min\.js|map|snap)$|(^|\/)dist\//;
-function parseDiff(diff) {
-  const hunks = [];
-  let file = "";
-  let header = "";
-  let lines;
-  let newLine = 0;
-  const flush = () => {
-    if (lines && !SKIP.test(file)) hunks.push(...split(file, header, lines));
-    lines = void 0;
-  };
-  let previous = "";
-  for (const raw of diff.split(/\r?\n/)) {
-    const isFileHeader = raw.startsWith("+++ ") && previous.startsWith("--- ");
-    previous = raw;
-    if (raw.startsWith("diff --git ")) {
-      flush();
-      file = "";
-    } else if (isFileHeader) {
-      const path = raw.slice(4).trim();
-      file = path === "/dev/null" ? "" : path.replace(/^b\//, "");
-    } else if (raw.startsWith("@@")) {
-      flush();
-      header = raw;
-      newLine = Number(raw.match(/\+(\d+)/)?.[1] ?? 1);
-      if (file) lines = [];
-    } else if (lines) {
-      const inNewFile = raw.startsWith("+") || raw.startsWith(" ") || raw === "";
-      lines.push({ raw, newLine: inNewFile ? newLine++ : void 0 });
+var GitHub = class {
+  constructor(token, repo, api = "https://api.github.com") {
+    this.token = token;
+    this.repo = repo;
+    this.api = api;
+  }
+  token;
+  repo;
+  api;
+  async get(path, accept) {
+    const res = await fetch(`${this.api}/repos/${this.repo}${path}`, {
+      headers: { authorization: `Bearer ${this.token}`, accept, "x-github-api-version": "2022-11-28" }
+    });
+    if (!res.ok) throw Object.assign(new Error(`GitHub ${res.status} on ${path}: ${await res.text()}`), { status: res.status });
+    return res.text();
+  }
+  pullRequestDiff(pr) {
+    return this.get(`/pulls/${pr}`, "application/vnd.github.diff");
+  }
+  /** A file's contents at a ref, or undefined if it doesn't exist there. */
+  async fileAt(path, ref) {
+    try {
+      return await this.get(`/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(ref)}`, "application/vnd.github.raw+json");
+    } catch (error2) {
+      if (error2.status === 404) return void 0;
+      throw error2;
     }
   }
-  flush();
-  return hunks;
-}
-function split(file, header, lines) {
-  while (lines.at(-1)?.raw === "") lines.pop();
-  const pieces = [[]];
-  lines.forEach((line, i) => {
-    const code = line.raw.slice(1);
-    const previousBlank = i > 0 && lines[i - 1].raw.slice(1).trim() === "";
-    const topLevel = line.newLine !== void 0 && /^[^\s})\]]/.test(code);
-    if (previousBlank && topLevel && pieces.at(-1).length) pieces.push([]);
-    pieces.at(-1).push(line);
-  });
-  return pieces.flatMap((piece) => {
-    const added = piece.filter((l) => l.raw.startsWith("+") && l.raw.slice(1).trim()).map((l) => ({ line: l.newLine, text: l.raw.slice(1) }));
-    if (!added.length) return [];
-    return [{ file, line: added[0].line, text: [header, ...piece.map((l) => l.raw)].join("\n"), added }];
-  });
-}
+};
 
 // node_modules/.pnpm/@typesafe-ai+sdk@0.6.0/node_modules/@typesafe-ai/sdk/dist/index.mjs
 var requestIdFrom = (headers) => headers.get("x-typesafe-request-id") ?? void 0;
@@ -22010,9 +21986,70 @@ async function locate(findings, ask) {
   });
 }
 var options = (f) => f.hunk.added.slice(0, MAX_CHOICES).map((a) => [`L${a.line}`, a.text]);
+var USD_PER_INPUT_TOKEN = 0.042 / 1e6;
 function jevAsk(apiKey, model = "jev-latest") {
   const client = new TypeSafeClient({ apiKey, defaultModel: model, retry: { maxRetries: 5 }, timeout: 6e4 });
-  return async (state, questions) => (await client.systemOne({ state, questions })).answers;
+  const usage = { requests: 0, inputTokens: 0, costUsd: 0 };
+  const ask = async (state, questions) => {
+    const response = await client.systemOne({ state, questions });
+    usage.requests++;
+    usage.inputTokens += response.usage.input_tokens;
+    usage.costUsd = usage.inputTokens * USD_PER_INPUT_TOKEN;
+    return response.answers;
+  };
+  return Object.assign(ask, { usage });
+}
+
+// src/diff.ts
+var SKIP = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|Cargo\.lock|poetry\.lock|go\.sum)$|\.(png|jpe?g|gif|svg|ico|webp|pdf|zip|min\.js|map|snap)$|(^|\/)dist\//;
+function parseDiff(diff) {
+  const hunks = [];
+  let file = "";
+  let header = "";
+  let lines;
+  let newLine = 0;
+  const flush = () => {
+    if (lines && !SKIP.test(file)) hunks.push(...split(file, header, lines));
+    lines = void 0;
+  };
+  let previous = "";
+  for (const raw of diff.split(/\r?\n/)) {
+    const isFileHeader = raw.startsWith("+++ ") && previous.startsWith("--- ");
+    previous = raw;
+    if (raw.startsWith("diff --git ")) {
+      flush();
+      file = "";
+    } else if (isFileHeader) {
+      const path = raw.slice(4).trim();
+      file = path === "/dev/null" ? "" : path.replace(/^b\//, "");
+    } else if (raw.startsWith("@@")) {
+      flush();
+      header = raw;
+      newLine = Number(raw.match(/\+(\d+)/)?.[1] ?? 1);
+      if (file) lines = [];
+    } else if (lines) {
+      const inNewFile = raw.startsWith("+") || raw.startsWith(" ") || raw === "";
+      lines.push({ raw, newLine: inNewFile ? newLine++ : void 0 });
+    }
+  }
+  flush();
+  return hunks;
+}
+function split(file, header, lines) {
+  while (lines.at(-1)?.raw === "") lines.pop();
+  const pieces = [[]];
+  lines.forEach((line, i) => {
+    const code = line.raw.slice(1);
+    const previousBlank = i > 0 && lines[i - 1].raw.slice(1).trim() === "";
+    const topLevel = line.newLine !== void 0 && /^[^\s})\]]/.test(code);
+    if (previousBlank && topLevel && pieces.at(-1).length) pieces.push([]);
+    pieces.at(-1).push(line);
+  });
+  return pieces.flatMap((piece) => {
+    const added = piece.filter((l) => l.raw.startsWith("+") && l.raw.slice(1).trim()).map((l) => ({ line: l.newLine, text: l.raw.slice(1) }));
+    if (!added.length) return [];
+    return [{ file, line: added[0].line, text: [header, ...piece.map((l) => l.raw)].join("\n"), added }];
+  });
 }
 
 // src/review.ts
@@ -22024,126 +22061,44 @@ async function review(diff, rules, ask, threshold = DEFAULT_THRESHOLD) {
   const findings = (await locate(confident, ask)).sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.line - b.line);
   return { findings, judgments, hunks: hunks.length };
 }
-function commentBody(finding) {
-  return `**softlint** \xB7 ${finding.rule.text}
-
-<sub>Jev is ${Math.round(finding.probability * 100)}% sure this change breaks the rule.</sub>`;
-}
-
-// src/github.ts
-var GitHub = class {
-  constructor(token, repo, api = "https://api.github.com") {
-    this.token = token;
-    this.repo = repo;
-    this.api = api;
-  }
-  token;
-  repo;
-  api;
-  async request(path, init = {}) {
-    const res = await fetch(`${this.api}/repos/${this.repo}${path}`, {
-      ...init,
-      headers: {
-        authorization: `Bearer ${this.token}`,
-        accept: init.accept ?? "application/vnd.github+json",
-        "x-github-api-version": "2022-11-28",
-        "content-type": "application/json"
-      }
-    });
-    if (!res.ok) throw Object.assign(new Error(`GitHub ${res.status} on ${path}: ${await res.text()}`), { status: res.status });
-    return res;
-  }
-  async pullRequestDiff(pr) {
-    return (await this.request(`/pulls/${pr}`, { accept: "application/vnd.github.diff" })).text();
-  }
-  /** A file's contents at a ref, or undefined if it doesn't exist there. */
-  async fileAt(path, ref) {
-    try {
-      const res = await this.request(`/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(ref)}`, {
-        accept: "application/vnd.github.raw+json"
-      });
-      return await res.text();
-    } catch (error2) {
-      if (error2.status === 404) return void 0;
-      throw error2;
-    }
-  }
-  /** Markers of the softlint comments already on this PR, so re-runs don't repeat themselves. */
-  async existingMarkers(pr) {
-    const markers = /* @__PURE__ */ new Set();
-    for (let page = 1; ; page++) {
-      const comments = await (await this.request(`/pulls/${pr}/comments?per_page=100&page=${page}`)).json();
-      for (const c of comments) for (const m of c.body.matchAll(/<!-- softlint:(\w+) -->/g)) markers.add(m[1]);
-      if (comments.length < 100) return markers;
-    }
-  }
-  /** Posts one review with an inline comment per finding. */
-  async postReview(pr, commitId, findings) {
-    await this.request(`/pulls/${pr}/reviews`, {
-      method: "POST",
-      body: JSON.stringify({
-        commit_id: commitId,
-        event: "COMMENT",
-        body: `**softlint** found ${findings.length} change${findings.length === 1 ? "" : "s"} that likely break${findings.length === 1 ? "s" : ""} a rule in \`softlint.json\`.`,
-        comments: findings.map((f) => ({
-          path: f.hunk.file,
-          line: f.line,
-          side: "RIGHT",
-          body: `${commentBody(f)}
-<!-- softlint:${marker(f)} -->`
-        }))
-      })
-    });
-  }
-};
-function marker(f) {
-  const added = f.hunk.text.split("\n").filter((l) => l.startsWith("+")).join("\n");
-  return createHash("sha256").update(`${f.hunk.file}\0${f.rule.text}\0${added}`).digest("hex").slice(0, 16);
-}
 
 // src/action.ts
+var MAX_ANNOTATIONS = 10;
+var percent = (p) => `${Math.round(p * 100)}%`;
+var dollars = (usd) => `$${usd < 0.01 ? usd.toFixed(5) : usd.toFixed(2)}`;
 async function run() {
-  const apiKey = getInput("jev-api-key", { required: true });
   const rulesPath = getInput("rules") || "softlint.json";
   const threshold = Number(getInput("threshold") || 0.8);
-  const failOnFindings = getBooleanInput("fail-on-findings");
-  const token = getInput("github-token", { required: true });
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
   const pr = event.pull_request;
-  if (!pr) {
-    info("softlint only reviews pull requests; nothing to do for this event.");
-    return;
-  }
-  const github = new GitHub(token, process.env.GITHUB_REPOSITORY, process.env.GITHUB_API_URL);
+  if (!pr) return info("softlint only reviews pull requests; nothing to do for this event.");
+  const github = new GitHub(getInput("github-token", { required: true }), process.env.GITHUB_REPOSITORY, process.env.GITHUB_API_URL);
   const config = existsSync2(rulesPath) ? readFileSync(rulesPath, "utf8") : await github.fileAt(rulesPath, pr.head.sha);
   if (config === void 0) return setFailed(`No ${rulesPath} found. Add one with your rules (see the softlint README).`);
   const rules = parseRules(config, rulesPath);
-  info(`Loaded ${rules.length} rule${rules.length === 1 ? "" : "s"} from ${rulesPath}.`);
-  const diff = await github.pullRequestDiff(pr.number);
-  const { findings, hunks } = await review(diff, rules, jevAsk(apiKey, getInput("model") || void 0), threshold);
-  info(`Jev judged ${hunks} hunks \xD7 ${rules.length} rules: ${findings.length} finding(s) at \u2265 ${threshold}.`);
-  for (const f of findings) warning(f.rule.text, { title: `softlint (${Math.round(f.probability * 100)}%)`, file: f.hunk.file, startLine: f.line });
-  const posted = await github.existingMarkers(pr.number);
-  const fresh = findings.filter((f) => !posted.has(marker(f)));
-  if (fresh.length) {
-    try {
-      await github.postReview(pr.number, pr.head.sha, fresh);
-      info(`Posted a review with ${fresh.length} comment(s).`);
-    } catch (error2) {
-      warning(`Couldn't post the review (${error2.message.slice(0, 120)}). Findings are in the annotations.`);
-    }
+  const jev = jevAsk(getInput("jev-api-key", { required: true }), getInput("model") || void 0);
+  const { findings, hunks } = await review(await github.pullRequestDiff(pr.number), rules, jev, threshold);
+  const cost = `${dollars(jev.usage.costUsd)} (${jev.usage.requests} Jev requests, ${jev.usage.inputTokens.toLocaleString("en-US")} input tokens)`;
+  info(`Checked ${hunks} changes against ${rules.length} rules from ${rulesPath}: ${findings.length} finding(s) at \u2265 ${percent(threshold)}.`);
+  info(`Cost: ${cost}.`);
+  const annotated = new Set([...findings].sort((a, b) => b.probability - a.probability).slice(0, MAX_ANNOTATIONS));
+  for (const f of findings) {
+    info(`  ${percent(f.probability).padStart(4)}  ${f.hunk.file}:${f.line}`);
+    if (annotated.has(f)) warning(f.rule.text, { title: `softlint (${percent(f.probability)})`, file: f.hunk.file, startLine: f.line });
   }
+  if (findings.length > MAX_ANNOTATIONS) info(`GitHub shows 10 annotations per step; all ${findings.length} findings are in the job summary.`);
   summary.addHeading("softlint", 3);
   if (findings.length) {
     summary.addTable([
       [{ data: "Where", header: true }, { data: "Rule", header: true }, { data: "Jev", header: true }],
-      ...findings.map((f) => [`${f.hunk.file}:${f.line}`, f.rule.text, `${Math.round(f.probability * 100)}%`])
+      ...findings.map((f) => [`${f.hunk.file}:${f.line}`, f.rule.text, percent(f.probability)])
     ]);
   } else {
-    summary.addRaw("No rule violations found.");
+    summary.addRaw("No rule violations found.", true);
   }
-  await summary.write();
+  await summary.addRaw(`<sub>Cost: ${cost}.</sub>`, true).write();
   setOutput("findings", findings.length);
-  if (failOnFindings && findings.length) setFailed(`softlint found ${findings.length} rule violation(s).`);
+  setOutput("cost-usd", jev.usage.costUsd.toFixed(6));
+  if (getBooleanInput("fail-on-findings") && findings.length) setFailed(`softlint found ${findings.length} rule violation(s).`);
 }
 run().catch((error2) => setFailed(error2 instanceof Error ? error2.message : String(error2)));

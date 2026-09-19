@@ -2513,9 +2513,18 @@ async function locate(findings2, ask) {
   });
 }
 var options = (f) => f.hunk.added.slice(0, MAX_CHOICES).map((a) => [`L${a.line}`, a.text]);
+var USD_PER_INPUT_TOKEN = 0.042 / 1e6;
 function jevAsk(apiKey2, model = "jev-latest") {
   const client = new TypeSafeClient({ apiKey: apiKey2, defaultModel: model, retry: { maxRetries: 5 }, timeout: 6e4 });
-  return async (state, questions) => (await client.systemOne({ state, questions })).answers;
+  const usage = { requests: 0, inputTokens: 0, costUsd: 0 };
+  const ask = async (state, questions) => {
+    const response = await client.systemOne({ state, questions });
+    usage.requests++;
+    usage.inputTokens += response.usage.input_tokens;
+    usage.costUsd = usage.inputTokens * USD_PER_INPUT_TOKEN;
+    return response.answers;
+  };
+  return Object.assign(ask, { usage });
 }
 
 // src/diff.ts

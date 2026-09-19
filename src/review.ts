@@ -21,8 +21,3 @@ export async function review(diff: string, rules: Rule[], ask: Ask, threshold = 
   const findings = (await locate(confident, ask)).sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.line - b.line);
   return { findings, judgments, hunks: hunks.length };
 }
-
-/** Markdown for one inline review comment. */
-export function commentBody(finding: Finding): string {
-  return `**softlint** · ${finding.rule.text}\n\n<sub>Jev is ${Math.round(finding.probability * 100)}% sure this change breaks the rule.</sub>`;
-}

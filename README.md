@@ -12,14 +12,14 @@ Each changed hunk is judged against each rule by [Jev](https://typesafe.ai), a m
 calibrated yes/no decisions. softlint only comments when Jev is confident, so it stays quiet.
 
 ```
-src/routes/invoices.ts:22
-  const invoice = await db.invoice.findUnique({ where: { id: req.params.id } });
-
-  softlint · Every endpoint that reads or changes one user's data must check that the requester may
-             access that specific record. Looking a record up by its id alone, without also filtering
-             by the requesting user or their account, breaks this rule.
-             Jev is 95% sure this change breaks the rule.
+⚠ softlint (95%)                                         src/routes/invoices.ts, line 22
+  Every endpoint that reads or changes one user's data must check that the requester may access
+  that specific record. Looking a record up by its id alone, without also filtering by the
+  requesting user or their account, breaks this rule.
 ```
+
+Findings show up as warnings right on the changed line in the PR's "Files changed" tab. The job summary
+lists them all, with what the run cost (usually a small fraction of a cent).
 
 ## Setup (2 minutes)
 
@@ -34,7 +34,6 @@ on: pull_request
 
 permissions:
   contents: read
-  pull-requests: write
 
 jobs:
   softlint:
@@ -145,9 +144,9 @@ These are lessons from building the examples, where every one of them moved a sc
 | `threshold` | `0.8` | How sure Jev must be (0–1) before softlint comments. |
 | `fail-on-findings` | `false` | Fail the check when there are findings, turning softlint from a reviewer into a gate. |
 | `model` | `jev-latest` | Jev model. |
-| `github-token` | `${{ github.token }}` | Used to read the diff and post the review. |
+| `github-token` | `${{ github.token }}` | Reads the PR diff (and the rules file when there's no checkout). softlint never writes to the PR. |
 
-Output: `findings`, the number of findings at or above the threshold.
+Outputs: `findings` (the number of findings at or above the threshold) and `cost-usd` (what the run cost).
 
 ## How it works
 
@@ -163,11 +162,13 @@ PR diff ─► pieces ─► (piece × rule) yes/no questions ─► Jev ─► 
 3. **Locate.** For each finding, one *choice* question asks Jev which added line breaks the rule, so
    the comment lands on `findUnique({ where: { id } })` and not on the imports above it. All findings
    share one request.
-4. **Report.** Findings are posted as one review with inline comments, plus annotations and a job
-   summary. On re-runs, comments that are already on the PR aren't repeated.
+4. **Report.** Each finding becomes a warning annotation on its line, and the job summary lists every
+   finding with the run's cost. GitHub shows at most 10 annotations per step, so the 10 most confident
+   ones are annotated and the rest are in the summary.
 
-A typical PR is **two Jev requests** and costs a fraction of a cent (Jev charges per input token,
-and output is free).
+A typical PR is **two Jev requests**. The demo PR in this repo (14 files, 30 changed pieces × 11 rules)
+costs about $0.0006 per run: Jev charges $0.042 per million input tokens, and output is free. Every run
+prints its cost in the log and the job summary, and sets it as the `cost-usd` output.
 
 The code is small on purpose: [`rules.ts`](src/rules.ts) · [`diff.ts`](src/diff.ts) ·
 [`jev.ts`](src/jev.ts) · [`review.ts`](src/review.ts) · [`github.ts`](src/github.ts) ·
@@ -175,8 +176,8 @@ The code is small on purpose: [`rules.ts`](src/rules.ts) · [`diff.ts`](src/diff
 
 ## Good to know
 
-- **Pull requests from forks** don't get repository secrets on `pull_request`, so softlint can't run on
-  them unless you opt in with `pull_request_target` (read GitHub's security notes first).
+- **Pull requests from forks** don't get repository secrets on `pull_request`, so softlint can't call Jev
+  for them unless you opt in with `pull_request_target` (read GitHub's security notes first).
 - **Jev is a judgment, not a proof.** Scores can move a few points between runs. Keep the threshold at
   0.8 or above for comments, and use `fail-on-findings` only for rules you've tested well.
 - softlint sees each hunk with 3 lines of context, not your whole codebase. Write rules that can be judged
@@ -186,7 +187,7 @@ The code is small on purpose: [`rules.ts`](src/rules.ts) · [`diff.ts`](src/diff
 
 ```sh
 pnpm install
-pnpm test        # 37 offline tests: parsers, batching, and the built action against fake GitHub + Jev servers
+pnpm test        # 36 offline tests: parsers, batching, and the built action against fake GitHub + Jev servers
 pnpm eval        # the examples catalog against the real Jev API (needs JEV_API_KEY, e.g. in .env)
 pnpm build       # bundles dist/ (committed, because GitHub runs it directly)
 ```

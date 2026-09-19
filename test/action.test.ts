@@ -20,13 +20,12 @@ const diff = `diff --git a/billing/refunds.py b/billing/refunds.py
 +        except stripe.error.APIConnectionError:
 +            time.sleep(2 ** attempt)
 `;
-const rules = JSON.stringify({
+let rules = JSON.stringify({
   rules: [{ rule: "Refunds must not be retried without an idempotency key." }, { rule: "Never log personal data." }],
 });
 
-// State shared with the fake servers.
-let existingComments: { body: string }[] = [];
-const reviews: any[] = [];
+// Everything the fake servers were asked, to check softlint only reads from GitHub.
+const githubRequests: string[] = [];
 const jevRequests: any[] = [];
 
 const server = createServer(async (req, res) => {
@@ -49,15 +48,11 @@ const server = createServer(async (req, res) => {
           : [id, { type: "noul", noul: q.instructions.includes("idempotency") ? 0.95 : 0.05 }],
       ),
     );
-    return send(200, { model: "jev-test", answers, usage: { input_tokens: 1, output_tokens: 1 } });
+    return send(200, { model: "jev-test", answers, usage: { input_tokens: 10_000, output_tokens: 1 } });
   }
+  githubRequests.push(`${req.method} ${url}`);
   if (url === "/repos/acme/shop/pulls/7") return send(200, diff);
   if (url.startsWith("/repos/acme/shop/contents/softlint.json?ref=abc123")) return send(200, rules);
-  if (url.startsWith("/repos/acme/shop/pulls/7/comments")) return send(200, existingComments);
-  if (url === "/repos/acme/shop/pulls/7/reviews" && req.method === "POST") {
-    reviews.push(JSON.parse(body));
-    return send(200, { id: reviews.length });
-  }
   send(404, { message: `unexpected ${req.method} ${url}` });
 });
 
@@ -101,31 +96,22 @@ async function runAction(inputs: Record<string, string> = {}) {
   return { status, stdout, stderr, output: readFileSync(files.output, "utf8"), summary: readFileSync(files.summary, "utf8") };
 }
 
-test("reviews the PR: one inline comment on the first added line, plus annotations and a summary", async () => {
+test("annotates the exact line, and reports findings and cost in the log, summary and outputs", async () => {
   const run = await runAction();
   assert.equal(run.status, 0, run.stdout + run.stderr);
   assert.equal(jevRequests.length, 2); // judge (1 hunk × 2 rules), then locate (1 finding)
   assert.equal(Object.keys(jevRequests[0].questions).length, 2);
   assert.equal(jevRequests[1].questions.f0.type, "choice");
 
-  assert.equal(reviews.length, 1);
-  const [comment] = reviews[0].comments;
-  assert.deepEqual([comment.path, comment.line, comment.side], ["billing/refunds.py", 15, "RIGHT"]); // the line Jev picked
-  assert.match(comment.body, /idempotency key.*95%/s);
-  assert.match(comment.body, /<!-- softlint:\w+ -->/);
-  assert.equal(reviews[0].commit_id, "abc123");
-
+  // The finding is a warning annotation on the line Jev picked (the Stripe call), nothing else is posted.
   assert.match(run.stdout, /::warning title=softlint \(95%25\),file=billing\/refunds\.py,line=15::Refunds must not be retried/);
-  assert.match(run.output, /findings[\s\S]*1/);
-  assert.match(run.summary, /billing\/refunds\.py:15/);
-});
+  assert.ok(githubRequests.every((r) => r.startsWith("GET ")), githubRequests.join(", "));
 
-test("doesn't repeat a comment that's already on the PR", async () => {
-  existingComments = [{ body: reviews[0].comments[0].body }];
-  const run = await runAction();
-  assert.equal(run.status, 0, run.stdout + run.stderr);
-  assert.equal(reviews.length, 1); // no new review
-  existingComments = [];
+  // 2 requests × 10,000 input tokens at $0.042 per million = $0.00084.
+  assert.match(run.stdout, /Cost: \$0\.00084 \(2 Jev requests, 20,000 input tokens\)/);
+  assert.match(run.summary, /billing\/refunds\.py:15[\s\S]*Cost: \$0\.00084/);
+  assert.match(run.output, /findings[\s\S]*1/);
+  assert.match(run.output, /cost-usd[\s\S]*0\.000840/);
 });
 
 test("fail-on-findings turns softlint into a gate", async () => {
@@ -134,10 +120,20 @@ test("fail-on-findings turns softlint into a gate", async () => {
   assert.match(run.stdout, /softlint found 1 rule violation/);
 });
 
-test("a higher threshold means no findings and no review", async () => {
-  const before = reviews.length;
+test("a higher threshold means no findings and no annotations", async () => {
   const run = await runAction({ threshold: "0.99" });
   assert.equal(run.status, 0, run.stdout + run.stderr);
-  assert.equal(reviews.length, before);
+  assert.doesNotMatch(run.stdout, /::warning/);
   assert.match(run.summary, /No rule violations found/);
+});
+
+test("annotates at most 10 findings (GitHub's per-step limit) but lists all of them in the summary", async () => {
+  const original = rules;
+  rules = JSON.stringify({ rules: Array.from({ length: 12 }, (_, i) => ({ rule: `Rule ${i}: no retries without an idempotency key.` })) });
+  const run = await runAction();
+  rules = original;
+  assert.equal(run.status, 0, run.stdout + run.stderr);
+  assert.equal(run.stdout.match(/::warning /g)?.length, 10);
+  assert.match(run.stdout, /all 12 findings are in the job summary/);
+  assert.equal(run.summary.match(/<td>billing\/refunds\.py:15<\/td>/g)?.length, 12);
 });
