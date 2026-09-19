@@ -36,7 +36,7 @@ const { findings, judgments, hunks } = await review(diff, rules, jevAsk(apiKey),
 const shown = values.all ? [...judgments].sort((a, b) => b.probability - a.probability) : findings;
 for (const j of shown) {
   const mark = j.probability >= threshold ? "✗" : " ";
-  console.log(`${mark} ${String(Math.round(j.probability * 100)).padStart(3)}%  ${j.hunk.file}:${j.hunk.line}  ${j.rule.text}`);
+  console.log(`${mark} ${String(Math.round(j.probability * 100)).padStart(3)}%  ${j.hunk.file}:${j.line}  ${j.rule.text}`);
 }
 console.log(`\n${findings.length} finding(s) in ${hunks} hunks against ${rules.length} rules (threshold ${threshold}).`);
 process.exit(findings.length ? 1 : 0);

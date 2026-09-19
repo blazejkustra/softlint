@@ -33,7 +33,7 @@ async function run() {
   core.info(`Jev judged ${hunks} hunks × ${rules.length} rules: ${findings.length} finding(s) at ≥ ${threshold}.`);
 
   // Annotations show up on the PR's "Files changed" tab even when a review can't be posted.
-  for (const f of findings) core.warning(f.rule.text, { title: `softlint (${Math.round(f.probability * 100)}%)`, file: f.hunk.file, startLine: f.hunk.line });
+  for (const f of findings) core.warning(f.rule.text, { title: `softlint (${Math.round(f.probability * 100)}%)`, file: f.hunk.file, startLine: f.line });
 
   const posted = await github.existingMarkers(pr.number);
   const fresh = findings.filter((f) => !posted.has(marker(f)));
@@ -51,7 +51,7 @@ async function run() {
   if (findings.length) {
     core.summary.addTable([
       [{ data: "Where", header: true }, { data: "Rule", header: true }, { data: "Jev", header: true }],
-      ...findings.map((f) => [`${f.hunk.file}:${f.hunk.line}`, f.rule.text, `${Math.round(f.probability * 100)}%`]),
+      ...findings.map((f) => [`${f.hunk.file}:${f.line}`, f.rule.text, `${Math.round(f.probability * 100)}%`]),
     ]);
   } else {
     core.summary.addRaw("No rule violations found.");

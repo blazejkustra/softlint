@@ -60,7 +60,7 @@ export class GitHub {
         body: `**softlint** found ${findings.length} change${findings.length === 1 ? "" : "s"} that likely break${findings.length === 1 ? "s" : ""} a rule in \`softlint.json\`.`,
         comments: findings.map((f) => ({
           path: f.hunk.file,
-          line: f.hunk.line,
+          line: f.line,
           side: "RIGHT",
           body: `${commentBody(f)}\n<!-- softlint:${marker(f)} -->`,
         })),

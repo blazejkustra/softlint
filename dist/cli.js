@@ -276,9 +276,9 @@ var require_utils = __commonJS({
       }
       return output;
     };
-    exports.wrapOutput = (input, state = {}, options = {}) => {
-      const prepend = options.contains ? "" : "^";
-      const append = options.contains ? "" : "$";
+    exports.wrapOutput = (input, state = {}, options2 = {}) => {
+      const prepend = options2.contains ? "" : "^";
+      const append = options2.contains ? "" : "$";
       let output = `${prepend}(?:${input})${append}`;
       if (state.negated === true) {
         output = `(?:^(?!${output}).*$)`;
@@ -341,8 +341,8 @@ var require_scan = __commonJS({
         token.depth = token.isGlobstar ? Infinity : 1;
       }
     };
-    var scan = (input, options) => {
-      const opts = options || {};
+    var scan = (input, options2) => {
+      const opts = options2 || {};
       const length = input.length - 1;
       const scanToEnd = opts.parts === true || opts.tokens === true || opts.scanToEnd === true;
       const slashes = [];
@@ -647,9 +647,9 @@ var require_parse = __commonJS({
       REGEX_SPECIAL_CHARS_BACKREF,
       REPLACEMENTS
     } = constants;
-    var expandRange = (args, options) => {
-      if (typeof options.expandRange === "function") {
-        return options.expandRange(...args, options);
+    var expandRange = (args, options2) => {
+      if (typeof options2.expandRange === "function") {
+        return options2.expandRange(...args, options2);
       }
       args.sort();
       const value = `[${args.join("-")}]`;
@@ -851,11 +851,11 @@ var require_parse = __commonJS({
       }
       return depth;
     };
-    var analyzeRepeatedExtglob = (body, options) => {
-      if (options.maxExtglobRecursion === false) {
+    var analyzeRepeatedExtglob = (body, options2) => {
+      if (options2.maxExtglobRecursion === false) {
         return { risky: false };
       }
-      const max = typeof options.maxExtglobRecursion === "number" ? options.maxExtglobRecursion : constants.DEFAULT_MAX_EXTGLOB_RECURSION;
+      const max = typeof options2.maxExtglobRecursion === "number" ? options2.maxExtglobRecursion : constants.DEFAULT_MAX_EXTGLOB_RECURSION;
       const branches = splitTopLevel(body).map((branch) => branch.trim());
       if (branches.length > 1) {
         if (branches.some((branch) => branch === "") || branches.some((branch) => /^[*?]+$/.test(branch)) || hasRepeatedCharPrefixOverlap(branches)) {
@@ -887,12 +887,12 @@ var require_parse = __commonJS({
       }
       return { risky: false };
     };
-    var parse = (input, options) => {
+    var parse = (input, options2) => {
       if (typeof input !== "string") {
         throw new TypeError("Expected a string");
       }
       input = REPLACEMENTS[input] || input;
-      const opts = { ...options };
+      const opts = { ...options2 };
       const max = typeof opts.maxLength === "number" ? Math.min(MAX_LENGTH, opts.maxLength) : MAX_LENGTH;
       let len = input.length;
       if (len > max) {
@@ -1057,7 +1057,7 @@ var require_parse = __commonJS({
             output = token.close = `)$))${extglobStar}`;
           }
           if (token.inner.includes("*") && (rest = remaining()) && /^\.[^\\/.]+$/.test(rest)) {
-            const expression = parse(rest, { ...options, fastpaths: false }).output;
+            const expression = parse(rest, { ...options2, fastpaths: false }).output;
             output = token.close = `)${expression})${extglobStar})`;
           }
           if (token.prev.type === "bos") {
@@ -1107,7 +1107,7 @@ var require_parse = __commonJS({
           state.output = input;
           return state;
         }
-        state.output = utils.wrapOutput(output, state, options);
+        state.output = utils.wrapOutput(output, state, options2);
         return state;
       }
       while (!eos()) {
@@ -1580,8 +1580,8 @@ var require_parse = __commonJS({
       }
       return state;
     };
-    parse.fastpaths = (input, options) => {
-      const opts = { ...options };
+    parse.fastpaths = (input, options2) => {
+      const opts = { ...options2 };
       const max = typeof opts.maxLength === "number" ? Math.min(MAX_LENGTH, opts.maxLength) : MAX_LENGTH;
       const len = input.length;
       if (len > max) {
@@ -1658,9 +1658,9 @@ var require_picomatch = __commonJS({
     var utils = require_utils();
     var constants = require_constants();
     var isObject2 = (val) => val && typeof val === "object" && !Array.isArray(val);
-    var picomatch2 = (glob, options, returnState = false) => {
+    var picomatch2 = (glob, options2, returnState = false) => {
       if (Array.isArray(glob)) {
-        const fns = glob.map((input) => picomatch2(input, options, returnState));
+        const fns = glob.map((input) => picomatch2(input, options2, returnState));
         const arrayMatcher = (str) => {
           for (const isMatch of fns) {
             const state2 = isMatch(str);
@@ -1674,18 +1674,18 @@ var require_picomatch = __commonJS({
       if (glob === "" || typeof glob !== "string" && !isState) {
         throw new TypeError("Expected pattern to be a non-empty string");
       }
-      const opts = options || {};
+      const opts = options2 || {};
       const posix = opts.windows;
-      const regex = isState ? picomatch2.compileRe(glob, options) : picomatch2.makeRe(glob, options, false, true);
+      const regex = isState ? picomatch2.compileRe(glob, options2) : picomatch2.makeRe(glob, options2, false, true);
       const state = regex.state;
       delete regex.state;
       let isIgnored = () => false;
       if (opts.ignore) {
-        const ignoreOpts = { ...options, ignore: null, onMatch: null, onResult: null };
+        const ignoreOpts = { ...options2, ignore: null, onMatch: null, onResult: null };
         isIgnored = picomatch2(opts.ignore, ignoreOpts, returnState);
       }
       const matcher = (input, returnObject = false) => {
-        const { isMatch, match, output } = picomatch2.test(input, regex, options, { glob, posix });
+        const { isMatch, match, output } = picomatch2.test(input, regex, options2, { glob, posix });
         const result = { glob, state, regex, posix, input, output, match, isMatch };
         if (typeof opts.onResult === "function") {
           opts.onResult(result);
@@ -1711,14 +1711,14 @@ var require_picomatch = __commonJS({
       }
       return matcher;
     };
-    picomatch2.test = (input, regex, options, { glob, posix } = {}) => {
+    picomatch2.test = (input, regex, options2, { glob, posix } = {}) => {
       if (typeof input !== "string") {
         throw new TypeError("Expected input to be a string");
       }
       if (input === "") {
         return { isMatch: false, output: "" };
       }
-      const opts = options || {};
+      const opts = options2 || {};
       const format = opts.format || (posix ? utils.toPosixSlashes : null);
       let match = input === glob;
       let output = match && format ? format(input) : input;
@@ -1728,59 +1728,59 @@ var require_picomatch = __commonJS({
       }
       if (match === false || opts.capture === true) {
         if (opts.matchBase === true || opts.basename === true) {
-          match = picomatch2.matchBase(input, regex, options, posix);
+          match = picomatch2.matchBase(input, regex, options2, posix);
         } else {
           match = regex.exec(output);
         }
       }
       return { isMatch: Boolean(match), match, output };
     };
-    picomatch2.matchBase = (input, glob, options, posix = options && options.windows) => {
-      const regex = glob instanceof RegExp ? glob : picomatch2.makeRe(glob, options);
+    picomatch2.matchBase = (input, glob, options2, posix = options2 && options2.windows) => {
+      const regex = glob instanceof RegExp ? glob : picomatch2.makeRe(glob, options2);
       return regex.test(utils.basename(input, { windows: posix }));
     };
-    picomatch2.isMatch = (str, patterns, options) => picomatch2(patterns, options)(str);
-    picomatch2.parse = (pattern, options) => {
-      if (Array.isArray(pattern)) return pattern.map((p) => picomatch2.parse(p, options));
-      return parse(pattern, { ...options, fastpaths: false });
+    picomatch2.isMatch = (str, patterns, options2) => picomatch2(patterns, options2)(str);
+    picomatch2.parse = (pattern, options2) => {
+      if (Array.isArray(pattern)) return pattern.map((p) => picomatch2.parse(p, options2));
+      return parse(pattern, { ...options2, fastpaths: false });
     };
-    picomatch2.scan = (input, options) => scan(input, options);
-    picomatch2.compileRe = (state, options, returnOutput = false, returnState = false) => {
+    picomatch2.scan = (input, options2) => scan(input, options2);
+    picomatch2.compileRe = (state, options2, returnOutput = false, returnState = false) => {
       if (returnOutput === true) {
         return state.output;
       }
-      const opts = options || {};
+      const opts = options2 || {};
       const prepend = opts.contains ? "" : "^";
       const append = opts.contains ? "" : "$";
       let source = `${prepend}(?:${state.output})${append}`;
       if (state && state.negated === true) {
         source = `^(?!${source}).*$`;
       }
-      const regex = picomatch2.toRegex(source, options);
+      const regex = picomatch2.toRegex(source, options2);
       if (returnState === true) {
         regex.state = state;
       }
       return regex;
     };
-    picomatch2.makeRe = (input, options = {}, returnOutput = false, returnState = false) => {
+    picomatch2.makeRe = (input, options2 = {}, returnOutput = false, returnState = false) => {
       if (!input || typeof input !== "string") {
         throw new TypeError("Expected a non-empty string");
       }
       let parsed = { negated: false, fastpaths: true };
-      if (options.fastpaths !== false && (input[0] === "." || input[0] === "*")) {
-        parsed.output = parse.fastpaths(input, options);
+      if (options2.fastpaths !== false && (input[0] === "." || input[0] === "*")) {
+        parsed.output = parse.fastpaths(input, options2);
       }
       if (!parsed.output) {
-        parsed = parse(input, options);
+        parsed = parse(input, options2);
       }
-      return picomatch2.compileRe(parsed, options, returnOutput, returnState);
+      return picomatch2.compileRe(parsed, options2, returnOutput, returnState);
     };
-    picomatch2.toRegex = (source, options) => {
+    picomatch2.toRegex = (source, options2) => {
       try {
-        const opts = options || {};
+        const opts = options2 || {};
         return new RegExp(source, opts.flags || (opts.nocase ? "i" : ""));
       } catch (err) {
-        if (options && options.debug === true) throw err;
+        if (options2 && options2.debug === true) throw err;
         return /$^/;
       }
     };
@@ -1795,11 +1795,11 @@ var require_picomatch2 = __commonJS({
     "use strict";
     var pico = require_picomatch();
     var utils = require_utils();
-    function picomatch2(glob, options, returnState = false) {
-      if (options && (options.windows === null || options.windows === void 0)) {
-        options = { ...options, windows: utils.isWindows() };
+    function picomatch2(glob, options2, returnState = false) {
+      if (options2 && (options2.windows === null || options2.windows === void 0)) {
+        options2 = { ...options2, windows: utils.isWindows() };
       }
-      return pico(glob, options, returnState);
+      return pico(glob, options2, returnState);
     }
     Object.assign(picomatch2, pico);
     module.exports = picomatch2;
@@ -1922,8 +1922,8 @@ var sleep = (ms, signal) => new Promise((resolve, reject) => {
   signal?.addEventListener("abort", onAbort, { once: true });
 });
 var TypeSafeError = class extends Error {
-  constructor(message, options) {
-    super(message, options);
+  constructor(message, options2) {
+    super(message, options2);
     this.name = new.target.name;
   }
 };
@@ -2000,21 +2000,21 @@ var RateLimitError = class extends APIError {
 var InternalServerError = class extends APIError {
 };
 var APIConnectionError = class extends TypeSafeError {
-  constructor(message = "Connection error.", options) {
-    super(message, options);
+  constructor(message = "Connection error.", options2) {
+    super(message, options2);
   }
 };
 var APITimeoutError = class extends APIConnectionError {
   /** Configured timeout in milliseconds. */
   timeoutMs;
-  constructor(timeoutMs, options) {
-    super(`Request timed out after ${timeoutMs}ms.`, options);
+  constructor(timeoutMs, options2) {
+    super(`Request timed out after ${timeoutMs}ms.`, options2);
     this.timeoutMs = timeoutMs;
   }
 };
 var APIUserAbortError = class extends TypeSafeError {
-  constructor(message = "Request was aborted.", options) {
-    super(message, options);
+  constructor(message = "Request was aborted.", options2) {
+    super(message, options2);
   }
 };
 var LOG_LEVELS = [
@@ -2087,8 +2087,8 @@ var Models = class {
     this.#transport = transport;
   }
   /** List the models available to the account. */
-  list(options = {}) {
-    return this.#transport.request("GET", "/v1/models", options).map(unwrapModels);
+  list(options2 = {}) {
+    return this.#transport.request("GET", "/v1/models", options2).map(unwrapModels);
   }
 };
 var unwrapModels = (wire) => {
@@ -2234,7 +2234,7 @@ var TypeSafeClient = class {
     if (config.fetch === void 0 && typeof globalThis.fetch !== "function") missingFetch();
     this.fetch = config.fetch ?? defaultFetch;
     const transport = {
-      request: (method, path, options) => this.#request(method, path, options),
+      request: (method, path, options2) => this.#request(method, path, options2),
       defaultModel: this.defaultModel
     };
     this.models = new Models(transport);
@@ -2259,27 +2259,27 @@ var TypeSafeClient = class {
   * console.log(answers.billing.noul);
   * ```
   */
-  systemOne(request, options = {}) {
+  systemOne(request, options2 = {}) {
     validateQuestions(request.questions);
     const body = {
       ...request,
       model: request.model ?? this.defaultModel
     };
     return this.#request("POST", "/v1/systemone", {
-      ...options,
+      ...options2,
       body
     });
   }
   /** Send a request and parse its response body. */
-  #request(method, path, options = {}) {
+  #request(method, path, options2 = {}) {
     const resolved = {
       method,
       path,
-      body: options.body,
-      headers: mergeHeaders(this.defaultHeaders, options.headers ?? {}),
-      signal: options.signal,
-      timeout: options.timeout === void 0 ? this.timeout : assertPositiveMs("timeout", options.timeout),
-      retry: resolveRetryPolicy(this.retry, options.retry)
+      body: options2.body,
+      headers: mergeHeaders(this.defaultHeaders, options2.headers ?? {}),
+      signal: options2.signal,
+      timeout: options2.timeout === void 0 ? this.timeout : assertPositiveMs("timeout", options2.timeout),
+      retry: resolveRetryPolicy(this.retry, options2.retry)
     };
     const tag = `#${++this.#requestCount} ${method} ${path}`;
     return new APIPromise(this.fetchWithRetries(tag, resolved), async (res) => {
@@ -2439,47 +2439,83 @@ var isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 var MAX_QUESTIONS = 200;
 var MAX_STATE_CHARS = 6e4;
 var MAX_HUNK_CHARS = 6e3;
+var MAX_CHOICES = 255;
 function question(hunkId, rule) {
   return {
     type: "noul",
-    instructions: `Look only at the diff hunk \`hunks.${hunkId}\`. Lines starting with + were added, lines starting with - were removed, other lines are unchanged context. Does this change clearly violate the rule below? Judge the change itself, not code that was already there.
+    instructions: `Look only at the diff in \`hunks.${hunkId}.diff\`. Lines starting with + were added, lines starting with - were removed, other lines are unchanged context. Does this change clearly violate the rule below? Judge the change itself, not code that was already there.
 
 Rule: ${rule.text}`
   };
 }
 async function judge(hunks2, rules2, ask) {
-  const work = hunks2.map((hunk, i) => ({ id: `h${i}`, hunk, diff: hunk.text.slice(0, MAX_HUNK_CHARS), rules: rules2.filter((r) => appliesTo(r, hunk.file)) })).filter((w) => w.rules.length);
+  const work = hunks2.map((hunk, i) => ({
+    id: `h${i}`,
+    hunk,
+    diff: hunk.text.slice(0, MAX_HUNK_CHARS),
+    rules: rules2.filter((r) => appliesTo(r, hunk.file))
+  })).filter((w) => w.rules.length);
   const batches = [[]];
   let questions = 0;
   let chars = 0;
   for (const w of work) {
-    const current = batches.at(-1);
-    if (current.length && (questions + w.rules.length > MAX_QUESTIONS || chars + w.diff.length > MAX_STATE_CHARS)) {
+    const size = w.diff.length;
+    if (batches.at(-1).length && (questions + w.rules.length > MAX_QUESTIONS || chars + size > MAX_STATE_CHARS)) {
       batches.push([]);
       questions = chars = 0;
     }
     batches.at(-1).push(w);
     questions += w.rules.length;
-    chars += w.diff.length;
+    chars += size;
   }
   const results = await Promise.all(
     batches.map(async (batch) => {
       if (!batch.length) return [];
-      const state = { hunks: Object.fromEntries(batch.map((w) => [w.id, { file: w.hunk.file, diff: w.diff }])) };
+      const state = {
+        hunks: Object.fromEntries(batch.map((w) => [w.id, { file: w.hunk.file, diff: w.diff }]))
+      };
       const questions2 = {};
       batch.forEach((w) => w.rules.forEach((rule, r) => questions2[`${w.id}_r${r}`] = question(w.id, rule)));
       const answers = await ask(state, questions2);
-      return batch.flatMap((w) => w.rules.map((rule, r) => ({ hunk: w.hunk, rule, probability: answers[`${w.id}_r${r}`] ?? 0 })));
+      return batch.flatMap(
+        (w) => w.rules.map((rule, r) => {
+          const answer = answers[`${w.id}_r${r}`];
+          return { hunk: w.hunk, rule, probability: answer?.type === "noul" ? answer.noul : 0, line: w.hunk.line };
+        })
+      );
     })
   );
   return results.flat();
 }
+async function locate(findings2, ask) {
+  const multiLine = findings2.filter((f) => f.hunk.added.length > 1);
+  if (!multiLine.length) return findings2;
+  const state = {
+    findings: Object.fromEntries(
+      multiLine.map((f, i) => [`f${i}`, { file: f.hunk.file, rule: f.rule.text, addedLines: Object.fromEntries(options(f)) }])
+    )
+  };
+  const questions = Object.fromEntries(
+    multiLine.map((f, i) => [
+      `f${i}`,
+      {
+        type: "choice",
+        instructions: `In \`findings.f${i}\`, a change breaks the rule "${f.rule.text}". Which added line is the one that breaks it?`,
+        criteria: Object.fromEntries(options(f).map(([key]) => [key, null]))
+      }
+    ])
+  );
+  const answers = await ask(state, questions);
+  return findings2.map((f) => {
+    const i = multiLine.indexOf(f);
+    const answer = i >= 0 ? answers[`f${i}`] : void 0;
+    return answer?.type === "choice" ? { ...f, line: Number(answer.choice.slice(1)) } : f;
+  });
+}
+var options = (f) => f.hunk.added.slice(0, MAX_CHOICES).map((a) => [`L${a.line}`, a.text]);
 function jevAsk(apiKey2, model = "jev-latest") {
   const client = new TypeSafeClient({ apiKey: apiKey2, defaultModel: model, retry: { maxRetries: 5 }, timeout: 6e4 });
-  return async (state, questions) => {
-    const { answers } = await client.systemOne({ state, questions });
-    return Object.fromEntries(Object.entries(answers).map(([id, answer]) => [id, answer.noul]));
-  };
+  return async (state, questions) => (await client.systemOne({ state, questions })).answers;
 }
 
 // src/diff.ts
@@ -2487,41 +2523,51 @@ var SKIP = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|Car
 function parseDiff(diff2) {
   const hunks2 = [];
   let file = "";
-  let hunk;
+  let header = "";
+  let lines;
   let newLine = 0;
   const flush = () => {
-    if (hunk?.line && !SKIP.test(hunk.file)) {
-      while (hunk.lines.at(-1) === "") hunk.lines.pop();
-      hunks2.push({ file: hunk.file, line: hunk.line, text: hunk.lines.join("\n") });
-    }
-    hunk = void 0;
+    if (lines && !SKIP.test(file)) hunks2.push(...split(file, header, lines));
+    lines = void 0;
   };
   let previous = "";
-  for (const line of diff2.split(/\r?\n/)) {
-    const isHeader = line.startsWith("+++ ") && previous.startsWith("--- ");
-    previous = line;
-    if (line.startsWith("diff --git ")) {
+  for (const raw of diff2.split(/\r?\n/)) {
+    const isFileHeader = raw.startsWith("+++ ") && previous.startsWith("--- ");
+    previous = raw;
+    if (raw.startsWith("diff --git ")) {
       flush();
       file = "";
-    } else if (isHeader) {
-      const path = line.slice(4).trim();
+    } else if (isFileHeader) {
+      const path = raw.slice(4).trim();
       file = path === "/dev/null" ? "" : path.replace(/^b\//, "");
-    } else if (line.startsWith("@@")) {
+    } else if (raw.startsWith("@@")) {
       flush();
-      newLine = Number(line.match(/\+(\d+)/)?.[1] ?? 1);
-      if (file) hunk = { file, line: 0, lines: [line] };
-    } else if (hunk) {
-      if (line.startsWith("+")) {
-        hunk.line ||= newLine;
-        newLine++;
-      } else if (line.startsWith(" ") || line === "") {
-        newLine++;
-      }
-      hunk.lines.push(line);
+      header = raw;
+      newLine = Number(raw.match(/\+(\d+)/)?.[1] ?? 1);
+      if (file) lines = [];
+    } else if (lines) {
+      const inNewFile = raw.startsWith("+") || raw.startsWith(" ") || raw === "";
+      lines.push({ raw, newLine: inNewFile ? newLine++ : void 0 });
     }
   }
   flush();
   return hunks2;
+}
+function split(file, header, lines) {
+  while (lines.at(-1)?.raw === "") lines.pop();
+  const pieces = [[]];
+  lines.forEach((line, i) => {
+    const code = line.raw.slice(1);
+    const previousBlank = i > 0 && lines[i - 1].raw.slice(1).trim() === "";
+    const topLevel = line.newLine !== void 0 && /^[^\s})\]]/.test(code);
+    if (previousBlank && topLevel && pieces.at(-1).length) pieces.push([]);
+    pieces.at(-1).push(line);
+  });
+  return pieces.flatMap((piece) => {
+    const added = piece.filter((l) => l.raw.startsWith("+") && l.raw.slice(1).trim()).map((l) => ({ line: l.newLine, text: l.raw.slice(1) }));
+    if (!added.length) return [];
+    return [{ file, line: added[0].line, text: [header, ...piece.map((l) => l.raw)].join("\n"), added }];
+  });
 }
 
 // src/review.ts
@@ -2529,7 +2575,8 @@ var DEFAULT_THRESHOLD = 0.8;
 async function review(diff2, rules2, ask, threshold2 = DEFAULT_THRESHOLD) {
   const hunks2 = parseDiff(diff2);
   const judgments2 = rules2.length ? await judge(hunks2, rules2, ask) : [];
-  const findings2 = judgments2.filter((j) => j.probability >= threshold2).sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.hunk.line - b.hunk.line);
+  const confident = judgments2.filter((j) => j.probability >= threshold2);
+  const findings2 = (await locate(confident, ask)).sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.line - b.line);
   return { findings: findings2, judgments: judgments2, hunks: hunks2.length };
 }
 
@@ -2560,7 +2607,7 @@ var { findings, judgments, hunks } = await review(diff, rules, jevAsk(apiKey), t
 var shown = values.all ? [...judgments].sort((a, b) => b.probability - a.probability) : findings;
 for (const j of shown) {
   const mark = j.probability >= threshold ? "\u2717" : " ";
-  console.log(`${mark} ${String(Math.round(j.probability * 100)).padStart(3)}%  ${j.hunk.file}:${j.hunk.line}  ${j.rule.text}`);
+  console.log(`${mark} ${String(Math.round(j.probability * 100)).padStart(3)}%  ${j.hunk.file}:${j.line}  ${j.rule.text}`);
 }
 console.log(`
 ${findings.length} finding(s) in ${hunks} hunks against ${rules.length} rules (threshold ${threshold}).`);

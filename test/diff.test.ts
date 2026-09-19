@@ -61,3 +61,41 @@ test("an added line starting with ++ is content, not a file header", () => {
 test("handles CRLF diffs", () => {
   assert.deepEqual(parseDiff(diff.replace(/\n/g, "\r\n")).map((h) => h.line), [11, 1]);
 });
+
+test("splits a hunk at top-level boundaries so each piece is judged alone", () => {
+  const routes = `diff --git a/api.ts b/api.ts
+--- a/api.ts
++++ b/api.ts
+@@ -1,2 +1,12 @@
+ import { r } from "./r";
++
++r.get("/orders", (req, res) => {
++  res.json(ownOrders(req.user));
++});
++
++r.get("/orders/:id", (req, res) => {
++  res.json(anyOrder(req.params.id));
++});
++
++export default r;
+`;
+  const pieces = parseDiff(routes);
+  assert.deepEqual(pieces.map((p) => p.line), [3, 7, 11]); // the lone blank line 2 isn't a piece of its own
+  assert.ok(pieces[1].text.startsWith("@@ -1,2 +1,12 @@") && pieces[1].text.includes("anyOrder") && !pieces[1].text.includes("ownOrders"));
+});
+
+test("keeps an indented body with its function, and records every non-blank added line", () => {
+  const [piece] = parseDiff(`diff --git a/a.py b/a.py
+--- a/a.py
++++ b/a.py
+@@ -1,1 +1,5 @@
+ def f():
++    x = 1
++
++    return x
+`);
+  assert.deepEqual(piece.added, [
+    { line: 2, text: "    x = 1" },
+    { line: 4, text: "    return x" },
+  ]);
+});

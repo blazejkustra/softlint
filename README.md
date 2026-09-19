@@ -12,10 +12,13 @@ Each changed hunk is judged against each rule by [Jev](https://typesafe.ai), a m
 calibrated yes/no decisions. softlint only comments when Jev is confident, so it stays quiet.
 
 ```
-src/routes/invoices.ts:20
-  softlint · Every endpoint that reads or changes one user's data must check that the requester is
-           allowed to access that specific record, not just that they are logged in.
-           Jev is 93% sure this change breaks the rule.
+src/routes/invoices.ts:22
+  const invoice = await db.invoice.findUnique({ where: { id: req.params.id } });
+
+  softlint · Every endpoint that reads or changes one user's data must check that the requester may
+             access that specific record. Looking a record up by its id alone, without also filtering
+             by the requesting user or their account, breaks this rule.
+             Jev is 95% sure this change breaks the rule.
 ```
 
 ## Setup (2 minutes)
@@ -48,7 +51,7 @@ jobs:
 {
   "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
   "rules": [
-    { "rule": "Every endpoint that reads or changes one user's data must check that the requester is allowed to access that specific record (for example, that it belongs to them), not just that they are logged in." },
+    { "rule": "Every endpoint that reads or changes one user's data must check that the requester may access that specific record. Looking a record up by its id alone, without also filtering by the requesting user or their account, breaks this rule." },
     { "rule": "Operations with real-world side effects (charging or refunding money, sending emails or SMS, calling webhooks) must not be retried or repeated without an idempotency key or a duplicate check." },
     { "rule": "Database migrations must keep working with the code that is currently deployed: do not drop or rename columns that existing code still uses, and add new columns as nullable or with a default.", "files": ["**/migrations/**"] }
   ]
@@ -95,17 +98,17 @@ that looks almost the same but is fine. That second diff is the hard part.
 Per example (threshold 0.8): bad.diff must be flagged, good.diff must not.
 
 example                  bad   good
-✓ api-compatibility       94%    4%
-✓ authorization           93%    6%
-✓ docs-drift              93%    5%
+✓ api-compatibility       93%    4%
+✓ authorization           95%    6%
+✓ docs-drift              93%    4%
 ✓ error-exposure          96%    9%
-✓ feature-flags           83%    5%
-✓ idempotency             86%    6%
-✓ meaningful-tests        85%    5%
+✓ feature-flags           85%    6%
+✓ idempotency             87%    5%
+✓ meaningful-tests        93%    5%
 ✓ personal-data-in-logs   96%   12%
 ✓ safe-migrations         92%    6%
-✓ swallowed-errors        95%    6%
-✓ ux-copy                 96%    6%
+✓ swallowed-errors        95%    7%
+✓ ux-copy                 96%    7%
 
 Full ruleset: 22 diffs × 11 rules
   recall    11/11 bad diffs caught by their own rule
@@ -121,6 +124,10 @@ These are lessons from building the examples, where every one of them moved a sc
 - **Name the violation concretely.** "Comments must be accurate" scored a contradicting docstring at
   61%. "What it says the code returns, throws or does must match what the code actually does" scored
   it about 80%.
+- **Describe what the violation looks like in code.** "Must check the requester may access the record,
+  not just that they are logged in" scored an unchecked `findUnique({ where: { id } })` at 79% in a real
+  PR, because the login check wasn't in view. Adding "looking a record up by its id alone, without also
+  filtering by the requesting user, breaks this rule" scored it at 91%.
 - **Scope rules with `files`.** An API-compatibility rule without scope fired on a SQL migration that
   renamed a column. Scoping it to `src/api/**` fixed that, and it also means fewer questions per PR.
 - **Test a rule before you add it.** Run it on a real diff and look at every score, including the ones
@@ -145,17 +152,21 @@ Output: `findings`, the number of findings at or above the threshold.
 ## How it works
 
 ```
-PR diff ─► hunks ─► (hunk × rule) yes/no questions ─► Jev ─► findings ≥ threshold ─► one PR review
+PR diff ─► pieces ─► (piece × rule) yes/no questions ─► Jev ─► findings ≥ threshold ─► exact line ─► one PR review
 ```
 
-1. The PR diff is split into hunks. Each hunk is anchored at its first added line, which is where the
-   comment goes. Lockfiles, `dist/` and binaries are skipped.
-2. Every hunk is paired with every rule whose `files` match. Each pair becomes one yes/no question for
-   Jev, and up to 200 questions go into a single request.
-3. Findings at or above the threshold are posted as one review with inline comments, plus
-   annotations and a job summary. On re-runs, comments that are already on the PR aren't repeated.
+1. **Split.** The PR diff is split into hunks, and each hunk is split further at top-level boundaries
+   (the next function, route or statement). Git happily merges a harmless change and a violation into
+   one hunk, and judging them together dilutes the violation. Lockfiles, `dist/` and binaries are skipped.
+2. **Judge.** Every piece is paired with every rule whose `files` match. Each pair is one yes/no question
+   for Jev, and up to 200 questions go into a single request.
+3. **Locate.** For each finding, one *choice* question asks Jev which added line breaks the rule, so
+   the comment lands on `findUnique({ where: { id } })` and not on the imports above it. All findings
+   share one request.
+4. **Report.** Findings are posted as one review with inline comments, plus annotations and a job
+   summary. On re-runs, comments that are already on the PR aren't repeated.
 
-A typical PR is **one Jev request** and costs a fraction of a cent (Jev charges per input token,
+A typical PR is **two Jev requests** and costs a fraction of a cent (Jev charges per input token,
 and output is free).
 
 The code is small on purpose: [`rules.ts`](src/rules.ts) · [`diff.ts`](src/diff.ts) ·
@@ -175,7 +186,7 @@ The code is small on purpose: [`rules.ts`](src/rules.ts) · [`diff.ts`](src/diff
 
 ```sh
 pnpm install
-pnpm test        # 34 offline tests: parsers, batching, and the built action against fake GitHub + Jev servers
+pnpm test        # 37 offline tests: parsers, batching, and the built action against fake GitHub + Jev servers
 pnpm eval        # the examples catalog against the real Jev API (needs JEV_API_KEY, e.g. in .env)
 pnpm build       # bundles dist/ (committed, because GitHub runs it directly)
 ```

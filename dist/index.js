@@ -50,42 +50,42 @@ var require_tunnel = __commonJS({
     exports.httpsOverHttp = httpsOverHttp2;
     exports.httpOverHttps = httpOverHttps2;
     exports.httpsOverHttps = httpsOverHttps2;
-    function httpOverHttp2(options) {
-      var agent = new TunnelingAgent(options);
+    function httpOverHttp2(options2) {
+      var agent = new TunnelingAgent(options2);
       agent.request = http.request;
       return agent;
     }
-    function httpsOverHttp2(options) {
-      var agent = new TunnelingAgent(options);
+    function httpsOverHttp2(options2) {
+      var agent = new TunnelingAgent(options2);
       agent.request = http.request;
       agent.createSocket = createSecureSocket;
       agent.defaultPort = 443;
       return agent;
     }
-    function httpOverHttps2(options) {
-      var agent = new TunnelingAgent(options);
+    function httpOverHttps2(options2) {
+      var agent = new TunnelingAgent(options2);
       agent.request = https.request;
       return agent;
     }
-    function httpsOverHttps2(options) {
-      var agent = new TunnelingAgent(options);
+    function httpsOverHttps2(options2) {
+      var agent = new TunnelingAgent(options2);
       agent.request = https.request;
       agent.createSocket = createSecureSocket;
       agent.defaultPort = 443;
       return agent;
     }
-    function TunnelingAgent(options) {
+    function TunnelingAgent(options2) {
       var self = this;
-      self.options = options || {};
+      self.options = options2 || {};
       self.proxyOptions = self.options.proxy || {};
       self.maxSockets = self.options.maxSockets || http.Agent.defaultMaxSockets;
       self.requests = [];
       self.sockets = [];
       self.on("free", function onFree(socket, host, port, localAddress) {
-        var options2 = toOptions(host, port, localAddress);
+        var options3 = toOptions(host, port, localAddress);
         for (var i = 0, len = self.requests.length; i < len; ++i) {
           var pending = self.requests[i];
-          if (pending.host === options2.host && pending.port === options2.port) {
+          if (pending.host === options3.host && pending.port === options3.port) {
             self.requests.splice(i, 1);
             pending.request.onSocket(socket);
             return;
@@ -98,18 +98,18 @@ var require_tunnel = __commonJS({
     util.inherits(TunnelingAgent, events.EventEmitter);
     TunnelingAgent.prototype.addRequest = function addRequest(req, host, port, localAddress) {
       var self = this;
-      var options = mergeOptions({ request: req }, self.options, toOptions(host, port, localAddress));
+      var options2 = mergeOptions({ request: req }, self.options, toOptions(host, port, localAddress));
       if (self.sockets.length >= this.maxSockets) {
-        self.requests.push(options);
+        self.requests.push(options2);
         return;
       }
-      self.createSocket(options, function(socket) {
+      self.createSocket(options2, function(socket) {
         socket.on("free", onFree);
         socket.on("close", onCloseOrRemove);
         socket.on("agentRemove", onCloseOrRemove);
         req.onSocket(socket);
         function onFree() {
-          self.emit("free", socket, options);
+          self.emit("free", socket, options2);
         }
         function onCloseOrRemove(err) {
           self.removeSocket(socket);
@@ -119,20 +119,20 @@ var require_tunnel = __commonJS({
         }
       });
     };
-    TunnelingAgent.prototype.createSocket = function createSocket(options, cb) {
+    TunnelingAgent.prototype.createSocket = function createSocket(options2, cb) {
       var self = this;
       var placeholder = {};
       self.sockets.push(placeholder);
       var connectOptions = mergeOptions({}, self.proxyOptions, {
         method: "CONNECT",
-        path: options.host + ":" + options.port,
+        path: options2.host + ":" + options2.port,
         agent: false,
         headers: {
-          host: options.host + ":" + options.port
+          host: options2.host + ":" + options2.port
         }
       });
-      if (options.localAddress) {
-        connectOptions.localAddress = options.localAddress;
+      if (options2.localAddress) {
+        connectOptions.localAddress = options2.localAddress;
       }
       if (connectOptions.proxyAuth) {
         connectOptions.headers = connectOptions.headers || {};
@@ -165,7 +165,7 @@ var require_tunnel = __commonJS({
           socket.destroy();
           var error2 = new Error("tunneling socket could not be established, statusCode=" + res.statusCode);
           error2.code = "ECONNRESET";
-          options.request.emit("error", error2);
+          options2.request.emit("error", error2);
           self.removeSocket(placeholder);
           return;
         }
@@ -174,7 +174,7 @@ var require_tunnel = __commonJS({
           socket.destroy();
           var error2 = new Error("got illegal response body from proxy");
           error2.code = "ECONNRESET";
-          options.request.emit("error", error2);
+          options2.request.emit("error", error2);
           self.removeSocket(placeholder);
           return;
         }
@@ -191,7 +191,7 @@ var require_tunnel = __commonJS({
         );
         var error2 = new Error("tunneling socket could not be established, cause=" + cause.message);
         error2.code = "ECONNRESET";
-        options.request.emit("error", error2);
+        options2.request.emit("error", error2);
         self.removeSocket(placeholder);
       }
     };
@@ -208,13 +208,13 @@ var require_tunnel = __commonJS({
         });
       }
     };
-    function createSecureSocket(options, cb) {
+    function createSecureSocket(options2, cb) {
       var self = this;
-      TunnelingAgent.prototype.createSocket.call(self, options, function(socket) {
-        var hostHeader = options.request.getHeader("host");
+      TunnelingAgent.prototype.createSocket.call(self, options2, function(socket) {
+        var hostHeader = options2.request.getHeader("host");
         var tlsOptions = mergeOptions({}, self.options, {
           socket,
-          servername: hostHeader ? hostHeader.replace(/:.*$/, "") : options.host
+          servername: hostHeader ? hostHeader.replace(/:.*$/, "") : options2.host
         });
         var secureSocket = tls.connect(0, tlsOptions);
         self.sockets[self.sockets.indexOf(socket)] = secureSocket;
@@ -647,8 +647,8 @@ var require_errors = __commonJS({
     };
     var kSecureProxyConnectionError = /* @__PURE__ */ Symbol.for("undici.error.UND_ERR_PRX_TLS");
     var SecureProxyConnectionError = class extends UndiciError {
-      constructor(cause, message, options) {
-        super(message, { cause, ...options ?? {} });
+      constructor(cause, message, options2) {
+        super(message, { cause, ...options2 ?? {} });
         this.name = "SecureProxyConnectionError";
         this.message = message || "Secure Proxy Connection failed";
         this.code = "UND_ERR_PRX_TLS";
@@ -2509,7 +2509,7 @@ var require_connect = __commonJS({
       if (maxCachedSessions != null && (!Number.isInteger(maxCachedSessions) || maxCachedSessions < 0)) {
         throw new InvalidArgumentError("maxCachedSessions must be a positive integer or zero");
       }
-      const options = { path: socketPath, ...opts };
+      const options2 = { path: socketPath, ...opts };
       const sessionCache = new SessionCache(maxCachedSessions == null ? 100 : maxCachedSessions);
       timeout = timeout == null ? 1e4 : timeout;
       allowH2 = allowH2 != null ? allowH2 : false;
@@ -2519,7 +2519,7 @@ var require_connect = __commonJS({
           if (!tls) {
             tls = __require("node:tls");
           }
-          servername = servername || options.servername || util.getServerName(host) || null;
+          servername = servername || options2.servername || util.getServerName(host) || null;
           const sessionKey = servername || hostname;
           assert(sessionKey);
           const session = customSession || sessionCache.get(sessionKey) || null;
@@ -2527,7 +2527,7 @@ var require_connect = __commonJS({
           socket = tls.connect({
             highWaterMark: 16384,
             // TLS in node can't have bigger HWM anyway...
-            ...options,
+            ...options2,
             servername,
             session,
             localAddress,
@@ -2547,14 +2547,14 @@ var require_connect = __commonJS({
           socket = net.connect({
             highWaterMark: 64 * 1024,
             // Same as nodejs fs streams.
-            ...options,
+            ...options2,
             localAddress,
             port,
             host: hostname
           });
         }
-        if (options.keepAlive == null || options.keepAlive) {
-          const keepAliveInitialDelay = options.keepAliveInitialDelay === void 0 ? 6e4 : options.keepAliveInitialDelay;
+        if (options2.keepAlive == null || options2.keepAlive) {
+          const keepAliveInitialDelay = options2.keepAliveInitialDelay === void 0 ? 6e4 : options2.keepAliveInitialDelay;
           socket.setKeepAlive(true, keepAliveInitialDelay);
         }
         const clearConnectTimeout = setupConnectTimeout(new WeakRef(socket), { timeout, hostname, port });
@@ -3827,8 +3827,8 @@ var require_webidl = __commonJS({
             message: `Expected ${dictionary} to be one of: Null, Undefined, Object.`
           });
         }
-        for (const options of converters) {
-          const { key, defaultValue, required, converter } = options;
+        for (const options2 of converters) {
+          const { key, defaultValue, required, converter } = options2;
           if (required === true) {
             if (!Object.hasOwn(dictionary, key)) {
               throw webidl.errors.exception({
@@ -3838,16 +3838,16 @@ var require_webidl = __commonJS({
             }
           }
           let value = dictionary[key];
-          const hasDefault = Object.hasOwn(options, "defaultValue");
+          const hasDefault = Object.hasOwn(options2, "defaultValue");
           if (hasDefault && value !== null) {
             value ??= defaultValue();
           }
           if (required || hasDefault || value !== void 0) {
             value = converter(value, prefix, `${argument}.${key}`);
-            if (options.allowedValues && !options.allowedValues.includes(value)) {
+            if (options2.allowedValues && !options2.allowedValues.includes(value)) {
               throw webidl.errors.exception({
                 header: prefix,
-                message: `${value} is not an accepted type. Expected one of ${options.allowedValues.join(", ")}.`
+                message: `${value} is not an accepted type. Expected one of ${options2.allowedValues.join(", ")}.`
               });
             }
             dict[key] = value;
@@ -4900,10 +4900,10 @@ var require_file = __commonJS({
     var { kState } = require_symbols2();
     var { webidl } = require_webidl();
     var FileLike = class _FileLike {
-      constructor(blobLike, fileName, options = {}) {
+      constructor(blobLike, fileName, options2 = {}) {
         const n = fileName;
-        const t = options.type;
-        const d = options.lastModified ?? Date.now();
+        const t = options2.type;
+        const d = options2.lastModified ?? Date.now();
         this[kState] = {
           blobLike,
           name: n,
@@ -5050,7 +5050,7 @@ var require_formdata = __commonJS({
           this[kState].push(entry);
         }
       }
-      [nodeUtil.inspect.custom](depth, options) {
+      [nodeUtil.inspect.custom](depth, options2) {
         const state = this[kState].reduce((a, b) => {
           if (a[b.name]) {
             if (Array.isArray(a[b.name])) {
@@ -5063,9 +5063,9 @@ var require_formdata = __commonJS({
           }
           return a;
         }, { __proto__: null });
-        options.depth ??= depth;
-        options.colors ??= true;
-        const output = nodeUtil.formatWithOptions(options, state);
+        options2.depth ??= depth;
+        options2.colors ??= true;
+        const output = nodeUtil.formatWithOptions(options2, state);
         return `FormData ${output.slice(output.indexOf("]") + 2)}`;
       }
     };
@@ -5089,11 +5089,11 @@ var require_formdata = __commonJS({
           value = value instanceof Blob ? new File([value], "blob", { type: value.type }) : new FileLike(value, "blob", { type: value.type });
         }
         if (filename !== void 0) {
-          const options = {
+          const options2 = {
             type: value.type,
             lastModified: value.lastModified
           };
-          value = value instanceof NativeFile ? new File([value], filename, options) : new FileLike(value, filename, options);
+          value = value instanceof NativeFile ? new File([value], filename, options2) : new FileLike(value, filename, options2);
         }
       }
       return { name, value };
@@ -8294,7 +8294,7 @@ var require_pool = __commonJS({
         autoSelectFamily,
         autoSelectFamilyAttemptTimeout,
         allowH2,
-        ...options
+        ...options2
       } = {}) {
         if (connections != null && (!Number.isFinite(connections) || connections < 0)) {
           throw new InvalidArgumentError("invalid connections");
@@ -8316,12 +8316,12 @@ var require_pool = __commonJS({
             ...connect
           });
         }
-        super(options);
-        this[kInterceptors] = options.interceptors?.Pool && Array.isArray(options.interceptors.Pool) ? options.interceptors.Pool : [];
+        super(options2);
+        this[kInterceptors] = options2.interceptors?.Pool && Array.isArray(options2.interceptors.Pool) ? options2.interceptors.Pool : [];
         this[kConnections] = connections || null;
         this[kUrl] = util.parseOrigin(origin);
-        this[kOptions] = { ...util.deepClone(options), connect, allowH2 };
-        this[kOptions].interceptors = options.interceptors ? { ...options.interceptors } : void 0;
+        this[kOptions] = { ...util.deepClone(options2), connect, allowH2 };
+        this[kOptions].interceptors = options2.interceptors ? { ...options2.interceptors } : void 0;
         this[kFactory] = factory;
         this.on("connectionError", (origin2, targets, error2) => {
           for (const target of targets) {
@@ -8515,7 +8515,7 @@ var require_agent = __commonJS({
       return opts && opts.connections === 1 ? new Client(origin, opts) : new Pool(origin, opts);
     }
     var Agent = class extends DispatcherBase {
-      constructor({ factory = defaultFactory, maxRedirections = 0, connect, ...options } = {}) {
+      constructor({ factory = defaultFactory, maxRedirections = 0, connect, ...options2 } = {}) {
         if (typeof factory !== "function") {
           throw new InvalidArgumentError("factory must be a function.");
         }
@@ -8525,13 +8525,13 @@ var require_agent = __commonJS({
         if (!Number.isInteger(maxRedirections) || maxRedirections < 0) {
           throw new InvalidArgumentError("maxRedirections must be a positive number");
         }
-        super(options);
+        super(options2);
         if (connect && typeof connect !== "function") {
           connect = { ...connect };
         }
-        this[kInterceptors] = options.interceptors?.Agent && Array.isArray(options.interceptors.Agent) ? options.interceptors.Agent : [createRedirectInterceptor({ maxRedirections })];
-        this[kOptions] = { ...util.deepClone(options), connect };
-        this[kOptions].interceptors = options.interceptors ? { ...options.interceptors } : void 0;
+        this[kInterceptors] = options2.interceptors?.Agent && Array.isArray(options2.interceptors.Agent) ? options2.interceptors.Agent : [createRedirectInterceptor({ maxRedirections })];
+        this[kOptions] = { ...util.deepClone(options2), connect };
+        this[kOptions].interceptors = options2.interceptors ? { ...options2.interceptors } : void 0;
         this[kMaxRedirections] = maxRedirections;
         this[kFactory] = factory;
         this[kClients] = /* @__PURE__ */ new Map();
@@ -8699,7 +8699,7 @@ var require_proxy_agent = __commonJS({
         const connect = buildConnector({ ...opts.proxyTls });
         this[kConnectEndpoint] = buildConnector({ ...opts.requestTls });
         const agentFactory = opts.factory || defaultAgentFactory;
-        const factory = (origin2, options) => {
+        const factory = (origin2, options2) => {
           const { protocol: protocol2 } = new URL2(origin2);
           if (!this[kTunnelProxy] && protocol2 === "http:" && this[kProxy].protocol === "http:") {
             return new Http1ProxyWrapper(this[kProxy].uri, {
@@ -8708,7 +8708,7 @@ var require_proxy_agent = __commonJS({
               factory: agentFactory
             });
           }
-          return agentFactory(origin2, options);
+          return agentFactory(origin2, options2);
         };
         this[kClient] = clientFactory(url, { connect });
         this[kAgent] = new Agent({
@@ -9307,10 +9307,10 @@ var require_retry_agent = __commonJS({
     var RetryAgent = class extends Dispatcher {
       #agent = null;
       #options = null;
-      constructor(agent, options = {}) {
-        super(options);
+      constructor(agent, options2 = {}) {
+        super(options2);
         this.#agent = agent;
-        this.#options = options;
+        this.#options = options2;
       }
       dispatch(opts, handler) {
         const retry = new RetryHandler({
@@ -12190,9 +12190,9 @@ var require_headers = __commonJS({
         }
         return this.#headersList[kHeadersSortedMap] = headers;
       }
-      [util.inspect.custom](depth, options) {
-        options.depth ??= depth;
-        return `Headers ${util.formatWithOptions(options, this.#headersList.entries)}`;
+      [util.inspect.custom](depth, options2) {
+        options2.depth ??= depth;
+        return `Headers ${util.formatWithOptions(options2, this.#headersList.entries)}`;
       }
       static getHeadersGuard(o) {
         return o.#guard;
@@ -12417,11 +12417,11 @@ var require_response = __commonJS({
         }
         return fromInnerResponse(clonedResponse, getHeadersGuard(this[kHeaders]));
       }
-      [nodeUtil.inspect.custom](depth, options) {
-        if (options.depth === null) {
-          options.depth = 2;
+      [nodeUtil.inspect.custom](depth, options2) {
+        if (options2.depth === null) {
+          options2.depth = 2;
         }
-        options.colors ??= true;
+        options2.colors ??= true;
         const properties = {
           status: this.status,
           statusText: this.statusText,
@@ -12433,7 +12433,7 @@ var require_response = __commonJS({
           type: this.type,
           url: this.url
         };
-        return `Response ${nodeUtil.formatWithOptions(options, properties)}`;
+        return `Response ${nodeUtil.formatWithOptions(options2, properties)}`;
       }
     };
     mixinBody(Response);
@@ -13186,11 +13186,11 @@ var require_request2 = __commonJS({
         }
         return fromInnerRequest(clonedRequest, ac.signal, getHeadersGuard(this[kHeaders]));
       }
-      [nodeUtil.inspect.custom](depth, options) {
-        if (options.depth === null) {
-          options.depth = 2;
+      [nodeUtil.inspect.custom](depth, options2) {
+        if (options2.depth === null) {
+          options2.depth = 2;
         }
-        options.colors ??= true;
+        options2.colors ??= true;
         const properties = {
           method: this.method,
           url: this.url,
@@ -13208,7 +13208,7 @@ var require_request2 = __commonJS({
           isHistoryNavigation: this.isHistoryNavigation,
           signal: this.signal
         };
-        return `Request ${nodeUtil.formatWithOptions(options, properties)}`;
+        return `Request ${nodeUtil.formatWithOptions(options2, properties)}`;
       }
     };
     mixinBody(Request);
@@ -15345,24 +15345,24 @@ var require_cache = __commonJS({
         webidl.util.markAsUncloneable(this);
         this.#relevantRequestResponseList = arguments[1];
       }
-      async match(request, options = {}) {
+      async match(request, options2 = {}) {
         webidl.brandCheck(this, _Cache);
         const prefix = "Cache.match";
         webidl.argumentLengthCheck(arguments, 1, prefix);
         request = webidl.converters.RequestInfo(request, prefix, "request");
-        options = webidl.converters.CacheQueryOptions(options, prefix, "options");
-        const p = this.#internalMatchAll(request, options, 1);
+        options2 = webidl.converters.CacheQueryOptions(options2, prefix, "options");
+        const p = this.#internalMatchAll(request, options2, 1);
         if (p.length === 0) {
           return;
         }
         return p[0];
       }
-      async matchAll(request = void 0, options = {}) {
+      async matchAll(request = void 0, options2 = {}) {
         webidl.brandCheck(this, _Cache);
         const prefix = "Cache.matchAll";
         if (request !== void 0) request = webidl.converters.RequestInfo(request, prefix, "request");
-        options = webidl.converters.CacheQueryOptions(options, prefix, "options");
-        return this.#internalMatchAll(request, options);
+        options2 = webidl.converters.CacheQueryOptions(options2, prefix, "options");
+        return this.#internalMatchAll(request, options2);
       }
       async add(request) {
         webidl.brandCheck(this, _Cache);
@@ -15559,16 +15559,16 @@ var require_cache = __commonJS({
         });
         return cacheJobPromise.promise;
       }
-      async delete(request, options = {}) {
+      async delete(request, options2 = {}) {
         webidl.brandCheck(this, _Cache);
         const prefix = "Cache.delete";
         webidl.argumentLengthCheck(arguments, 1, prefix);
         request = webidl.converters.RequestInfo(request, prefix, "request");
-        options = webidl.converters.CacheQueryOptions(options, prefix, "options");
+        options2 = webidl.converters.CacheQueryOptions(options2, prefix, "options");
         let r = null;
         if (request instanceof Request) {
           r = request[kState];
-          if (r.method !== "GET" && !options.ignoreMethod) {
+          if (r.method !== "GET" && !options2.ignoreMethod) {
             return false;
           }
         } else {
@@ -15579,7 +15579,7 @@ var require_cache = __commonJS({
         const operation = {
           type: "delete",
           request: r,
-          options
+          options: options2
         };
         operations.push(operation);
         const cacheJobPromise = createDeferredPromise();
@@ -15605,16 +15605,16 @@ var require_cache = __commonJS({
        * @param {import('../../types/cache').CacheQueryOptions} options
        * @returns {Promise<readonly Request[]>}
        */
-      async keys(request = void 0, options = {}) {
+      async keys(request = void 0, options2 = {}) {
         webidl.brandCheck(this, _Cache);
         const prefix = "Cache.keys";
         if (request !== void 0) request = webidl.converters.RequestInfo(request, prefix, "request");
-        options = webidl.converters.CacheQueryOptions(options, prefix, "options");
+        options2 = webidl.converters.CacheQueryOptions(options2, prefix, "options");
         let r = null;
         if (request !== void 0) {
           if (request instanceof Request) {
             r = request[kState];
-            if (r.method !== "GET" && !options.ignoreMethod) {
+            if (r.method !== "GET" && !options2.ignoreMethod) {
               return [];
             }
           } else if (typeof request === "string") {
@@ -15628,7 +15628,7 @@ var require_cache = __commonJS({
             requests.push(requestResponse[0]);
           }
         } else {
-          const requestResponses = this.#queryCache(r, options);
+          const requestResponses = this.#queryCache(r, options2);
           for (const requestResponse of requestResponses) {
             requests.push(requestResponse[0]);
           }
@@ -15736,12 +15736,12 @@ var require_cache = __commonJS({
        * @param {requestResponseList} targetStorage
        * @returns {requestResponseList}
        */
-      #queryCache(requestQuery, options, targetStorage) {
+      #queryCache(requestQuery, options2, targetStorage) {
         const resultList = [];
         const storage = targetStorage ?? this.#relevantRequestResponseList;
         for (const requestResponse of storage) {
           const [cachedRequest, cachedResponse] = requestResponse;
-          if (this.#requestMatchesCachedItem(requestQuery, cachedRequest, cachedResponse, options)) {
+          if (this.#requestMatchesCachedItem(requestQuery, cachedRequest, cachedResponse, options2)) {
             resultList.push(requestResponse);
           }
         }
@@ -15755,17 +15755,17 @@ var require_cache = __commonJS({
        * @param {import('../../types/cache').CacheQueryOptions | undefined} options
        * @returns {boolean}
        */
-      #requestMatchesCachedItem(requestQuery, request, response = null, options) {
+      #requestMatchesCachedItem(requestQuery, request, response = null, options2) {
         const queryURL = new URL(requestQuery.url);
         const cachedURL = new URL(request.url);
-        if (options?.ignoreSearch) {
+        if (options2?.ignoreSearch) {
           cachedURL.search = "";
           queryURL.search = "";
         }
         if (!urlEquals(queryURL, cachedURL, true)) {
           return false;
         }
-        if (response == null || options?.ignoreVary || !response.headersList.contains("vary")) {
+        if (response == null || options2?.ignoreVary || !response.headersList.contains("vary")) {
           return true;
         }
         const fieldValues = getFieldValues(response.headersList.get("vary"));
@@ -15781,12 +15781,12 @@ var require_cache = __commonJS({
         }
         return true;
       }
-      #internalMatchAll(request, options, maxResponses = Infinity) {
+      #internalMatchAll(request, options2, maxResponses = Infinity) {
         let r = null;
         if (request !== void 0) {
           if (request instanceof Request) {
             r = request[kState];
-            if (r.method !== "GET" && !options.ignoreMethod) {
+            if (r.method !== "GET" && !options2.ignoreMethod) {
               return [];
             }
           } else if (typeof request === "string") {
@@ -15799,7 +15799,7 @@ var require_cache = __commonJS({
             responses.push(requestResponse[1]);
           }
         } else {
-          const requestResponses = this.#queryCache(r, options);
+          const requestResponses = this.#queryCache(r, options2);
           for (const requestResponse of requestResponses) {
             responses.push(requestResponse[1]);
           }
@@ -15883,21 +15883,21 @@ var require_cachestorage = __commonJS({
         }
         webidl.util.markAsUncloneable(this);
       }
-      async match(request, options = {}) {
+      async match(request, options2 = {}) {
         webidl.brandCheck(this, _CacheStorage);
         webidl.argumentLengthCheck(arguments, 1, "CacheStorage.match");
         request = webidl.converters.RequestInfo(request);
-        options = webidl.converters.MultiCacheQueryOptions(options);
-        if (options.cacheName != null) {
-          if (this.#caches.has(options.cacheName)) {
-            const cacheList = this.#caches.get(options.cacheName);
+        options2 = webidl.converters.MultiCacheQueryOptions(options2);
+        if (options2.cacheName != null) {
+          if (this.#caches.has(options2.cacheName)) {
+            const cacheList = this.#caches.get(options2.cacheName);
             const cache = new Cache(kConstruct, cacheList);
-            return await cache.match(request, options);
+            return await cache.match(request, options2);
           }
         } else {
           for (const cacheList of this.#caches.values()) {
             const cache = new Cache(kConstruct, cacheList);
-            const response = await cache.match(request, options);
+            const response = await cache.match(request, options2);
             if (response !== void 0) {
               return response;
             }
@@ -17074,7 +17074,7 @@ var require_connection = __commonJS({
       crypto2 = __require("node:crypto");
     } catch {
     }
-    function establishWebSocketConnection(url, protocols, client, ws, onEstablish, options) {
+    function establishWebSocketConnection(url, protocols, client, ws, onEstablish, options2) {
       const requestURL = url;
       requestURL.protocol = url.protocol === "ws:" ? "http:" : "https:";
       const request = makeRequest({
@@ -17087,8 +17087,8 @@ var require_connection = __commonJS({
         cache: "no-store",
         redirect: "error"
       });
-      if (options.headers) {
-        const headersList = getHeadersList(new Headers2(options.headers));
+      if (options2.headers) {
+        const headersList = getHeadersList(new Headers2(options2.headers));
         request.headersList = headersList;
       }
       const keyValue = crypto2.randomBytes(16).toString("base64");
@@ -17102,7 +17102,7 @@ var require_connection = __commonJS({
       const controller = fetching({
         request,
         useParallelQueue: true,
-        dispatcher: options.dispatcher,
+        dispatcher: options2.dispatcher,
         processResponse(response) {
           if (response.type === "error" || response.status !== 101) {
             failWebsocketConnection(ws, "Received network error or non-101 status code.");
@@ -17252,10 +17252,10 @@ var require_permessage_deflate = __commonJS({
       /**
        * @param {Map<string, string>} extensions
        */
-      constructor(extensions, options) {
+      constructor(extensions, options2) {
         this.#options.serverNoContextTakeover = extensions.has("server_no_context_takeover");
         this.#options.serverMaxWindowBits = extensions.get("server_max_window_bits");
-        this.#maxPayloadSize = options.maxPayloadSize;
+        this.#maxPayloadSize = options2.maxPayloadSize;
       }
       /**
        * Decompress a compressed payload.
@@ -17362,14 +17362,14 @@ var require_receiver = __commonJS({
        * @param {Map<string, string>|null} extensions
        * @param {{ maxFragments?: number, maxPayloadSize?: number }} [options]
        */
-      constructor(ws, extensions, options = {}) {
+      constructor(ws, extensions, options2 = {}) {
         super();
         this.ws = ws;
         this.#extensions = extensions == null ? /* @__PURE__ */ new Map() : extensions;
-        this.#maxFragments = options.maxFragments ?? 0;
-        this.#maxPayloadSize = options.maxPayloadSize ?? 0;
+        this.#maxFragments = options2.maxFragments ?? 0;
+        this.#maxPayloadSize = options2.maxPayloadSize ?? 0;
         if (this.#extensions.has("permessage-deflate")) {
-          this.#extensions.set("permessage-deflate", new PerMessageDeflate(extensions, options));
+          this.#extensions.set("permessage-deflate", new PerMessageDeflate(extensions, options2));
         }
       }
       /**
@@ -17822,9 +17822,9 @@ var require_websocket = __commonJS({
         webidl.util.markAsUncloneable(this);
         const prefix = "WebSocket constructor";
         webidl.argumentLengthCheck(arguments, 1, prefix);
-        const options = webidl.converters["DOMString or sequence<DOMString> or WebSocketInit"](protocols, prefix, "options");
+        const options2 = webidl.converters["DOMString or sequence<DOMString> or WebSocketInit"](protocols, prefix, "options");
         url = webidl.converters.USVString(url, prefix, "url");
-        protocols = options.protocols;
+        protocols = options2.protocols;
         const baseURL = environmentSettingsObject.settingsObject.baseUrl;
         let urlRecord;
         try {
@@ -17863,7 +17863,7 @@ var require_websocket = __commonJS({
           client,
           this,
           (response, extensions) => this.#onConnectionEstablished(response, extensions),
-          options
+          options2
         );
         this[kReadyState] = _WebSocket.CONNECTING;
         this[kSentClose] = sentCloseFrameState.NOT_SENT;
@@ -18269,12 +18269,12 @@ var require_eventsource_stream = __commonJS({
        * @param {eventSourceSettings} options.eventSourceSettings
        * @param {Function} [options.push]
        */
-      constructor(options = {}) {
-        options.readableObjectMode = true;
-        super(options);
-        this.state = options.eventSourceSettings || {};
-        if (options.push) {
-          this.push = options.push;
+      constructor(options2 = {}) {
+        options2.readableObjectMode = true;
+        super(options2);
+        this.state = options2.eventSourceSettings || {};
+        if (options2.push) {
+          this.push = options2.push;
         }
       }
       /**
@@ -18917,9 +18917,9 @@ var require_undici = __commonJS({
     module.exports.setGlobalDispatcher = setGlobalDispatcher;
     module.exports.getGlobalDispatcher = getGlobalDispatcher;
     var fetchImpl = require_fetch().fetch;
-    module.exports.fetch = async function fetch2(init, options = void 0) {
+    module.exports.fetch = async function fetch2(init, options2 = void 0) {
       try {
-        return await fetchImpl(init, options);
+        return await fetchImpl(init, options2);
       } catch (err) {
         if (err && typeof err === "object") {
           Error.captureStackTrace(err);
@@ -19212,9 +19212,9 @@ var require_utils2 = __commonJS({
       }
       return output;
     };
-    exports.wrapOutput = (input, state = {}, options = {}) => {
-      const prepend = options.contains ? "" : "^";
-      const append = options.contains ? "" : "$";
+    exports.wrapOutput = (input, state = {}, options2 = {}) => {
+      const prepend = options2.contains ? "" : "^";
+      const append = options2.contains ? "" : "$";
       let output = `${prepend}(?:${input})${append}`;
       if (state.negated === true) {
         output = `(?:^(?!${output}).*$)`;
@@ -19277,8 +19277,8 @@ var require_scan = __commonJS({
         token.depth = token.isGlobstar ? Infinity : 1;
       }
     };
-    var scan = (input, options) => {
-      const opts = options || {};
+    var scan = (input, options2) => {
+      const opts = options2 || {};
       const length = input.length - 1;
       const scanToEnd = opts.parts === true || opts.tokens === true || opts.scanToEnd === true;
       const slashes = [];
@@ -19583,9 +19583,9 @@ var require_parse2 = __commonJS({
       REGEX_SPECIAL_CHARS_BACKREF,
       REPLACEMENTS
     } = constants3;
-    var expandRange = (args, options) => {
-      if (typeof options.expandRange === "function") {
-        return options.expandRange(...args, options);
+    var expandRange = (args, options2) => {
+      if (typeof options2.expandRange === "function") {
+        return options2.expandRange(...args, options2);
       }
       args.sort();
       const value = `[${args.join("-")}]`;
@@ -19787,11 +19787,11 @@ var require_parse2 = __commonJS({
       }
       return depth;
     };
-    var analyzeRepeatedExtglob = (body, options) => {
-      if (options.maxExtglobRecursion === false) {
+    var analyzeRepeatedExtglob = (body, options2) => {
+      if (options2.maxExtglobRecursion === false) {
         return { risky: false };
       }
-      const max = typeof options.maxExtglobRecursion === "number" ? options.maxExtglobRecursion : constants3.DEFAULT_MAX_EXTGLOB_RECURSION;
+      const max = typeof options2.maxExtglobRecursion === "number" ? options2.maxExtglobRecursion : constants3.DEFAULT_MAX_EXTGLOB_RECURSION;
       const branches = splitTopLevel(body).map((branch) => branch.trim());
       if (branches.length > 1) {
         if (branches.some((branch) => branch === "") || branches.some((branch) => /^[*?]+$/.test(branch)) || hasRepeatedCharPrefixOverlap(branches)) {
@@ -19823,12 +19823,12 @@ var require_parse2 = __commonJS({
       }
       return { risky: false };
     };
-    var parse = (input, options) => {
+    var parse = (input, options2) => {
       if (typeof input !== "string") {
         throw new TypeError("Expected a string");
       }
       input = REPLACEMENTS[input] || input;
-      const opts = { ...options };
+      const opts = { ...options2 };
       const max = typeof opts.maxLength === "number" ? Math.min(MAX_LENGTH, opts.maxLength) : MAX_LENGTH;
       let len = input.length;
       if (len > max) {
@@ -19993,7 +19993,7 @@ var require_parse2 = __commonJS({
             output = token.close = `)$))${extglobStar}`;
           }
           if (token.inner.includes("*") && (rest = remaining()) && /^\.[^\\/.]+$/.test(rest)) {
-            const expression = parse(rest, { ...options, fastpaths: false }).output;
+            const expression = parse(rest, { ...options2, fastpaths: false }).output;
             output = token.close = `)${expression})${extglobStar})`;
           }
           if (token.prev.type === "bos") {
@@ -20043,7 +20043,7 @@ var require_parse2 = __commonJS({
           state.output = input;
           return state;
         }
-        state.output = utils.wrapOutput(output, state, options);
+        state.output = utils.wrapOutput(output, state, options2);
         return state;
       }
       while (!eos()) {
@@ -20516,8 +20516,8 @@ var require_parse2 = __commonJS({
       }
       return state;
     };
-    parse.fastpaths = (input, options) => {
-      const opts = { ...options };
+    parse.fastpaths = (input, options2) => {
+      const opts = { ...options2 };
       const max = typeof opts.maxLength === "number" ? Math.min(MAX_LENGTH, opts.maxLength) : MAX_LENGTH;
       const len = input.length;
       if (len > max) {
@@ -20594,9 +20594,9 @@ var require_picomatch = __commonJS({
     var utils = require_utils2();
     var constants3 = require_constants6();
     var isObject2 = (val) => val && typeof val === "object" && !Array.isArray(val);
-    var picomatch2 = (glob, options, returnState = false) => {
+    var picomatch2 = (glob, options2, returnState = false) => {
       if (Array.isArray(glob)) {
-        const fns = glob.map((input) => picomatch2(input, options, returnState));
+        const fns = glob.map((input) => picomatch2(input, options2, returnState));
         const arrayMatcher = (str) => {
           for (const isMatch of fns) {
             const state2 = isMatch(str);
@@ -20610,18 +20610,18 @@ var require_picomatch = __commonJS({
       if (glob === "" || typeof glob !== "string" && !isState) {
         throw new TypeError("Expected pattern to be a non-empty string");
       }
-      const opts = options || {};
+      const opts = options2 || {};
       const posix = opts.windows;
-      const regex = isState ? picomatch2.compileRe(glob, options) : picomatch2.makeRe(glob, options, false, true);
+      const regex = isState ? picomatch2.compileRe(glob, options2) : picomatch2.makeRe(glob, options2, false, true);
       const state = regex.state;
       delete regex.state;
       let isIgnored = () => false;
       if (opts.ignore) {
-        const ignoreOpts = { ...options, ignore: null, onMatch: null, onResult: null };
+        const ignoreOpts = { ...options2, ignore: null, onMatch: null, onResult: null };
         isIgnored = picomatch2(opts.ignore, ignoreOpts, returnState);
       }
       const matcher = (input, returnObject = false) => {
-        const { isMatch, match, output } = picomatch2.test(input, regex, options, { glob, posix });
+        const { isMatch, match, output } = picomatch2.test(input, regex, options2, { glob, posix });
         const result = { glob, state, regex, posix, input, output, match, isMatch };
         if (typeof opts.onResult === "function") {
           opts.onResult(result);
@@ -20647,14 +20647,14 @@ var require_picomatch = __commonJS({
       }
       return matcher;
     };
-    picomatch2.test = (input, regex, options, { glob, posix } = {}) => {
+    picomatch2.test = (input, regex, options2, { glob, posix } = {}) => {
       if (typeof input !== "string") {
         throw new TypeError("Expected input to be a string");
       }
       if (input === "") {
         return { isMatch: false, output: "" };
       }
-      const opts = options || {};
+      const opts = options2 || {};
       const format = opts.format || (posix ? utils.toPosixSlashes : null);
       let match = input === glob;
       let output = match && format ? format(input) : input;
@@ -20664,59 +20664,59 @@ var require_picomatch = __commonJS({
       }
       if (match === false || opts.capture === true) {
         if (opts.matchBase === true || opts.basename === true) {
-          match = picomatch2.matchBase(input, regex, options, posix);
+          match = picomatch2.matchBase(input, regex, options2, posix);
         } else {
           match = regex.exec(output);
         }
       }
       return { isMatch: Boolean(match), match, output };
     };
-    picomatch2.matchBase = (input, glob, options, posix = options && options.windows) => {
-      const regex = glob instanceof RegExp ? glob : picomatch2.makeRe(glob, options);
+    picomatch2.matchBase = (input, glob, options2, posix = options2 && options2.windows) => {
+      const regex = glob instanceof RegExp ? glob : picomatch2.makeRe(glob, options2);
       return regex.test(utils.basename(input, { windows: posix }));
     };
-    picomatch2.isMatch = (str, patterns, options) => picomatch2(patterns, options)(str);
-    picomatch2.parse = (pattern, options) => {
-      if (Array.isArray(pattern)) return pattern.map((p) => picomatch2.parse(p, options));
-      return parse(pattern, { ...options, fastpaths: false });
+    picomatch2.isMatch = (str, patterns, options2) => picomatch2(patterns, options2)(str);
+    picomatch2.parse = (pattern, options2) => {
+      if (Array.isArray(pattern)) return pattern.map((p) => picomatch2.parse(p, options2));
+      return parse(pattern, { ...options2, fastpaths: false });
     };
-    picomatch2.scan = (input, options) => scan(input, options);
-    picomatch2.compileRe = (state, options, returnOutput = false, returnState = false) => {
+    picomatch2.scan = (input, options2) => scan(input, options2);
+    picomatch2.compileRe = (state, options2, returnOutput = false, returnState = false) => {
       if (returnOutput === true) {
         return state.output;
       }
-      const opts = options || {};
+      const opts = options2 || {};
       const prepend = opts.contains ? "" : "^";
       const append = opts.contains ? "" : "$";
       let source = `${prepend}(?:${state.output})${append}`;
       if (state && state.negated === true) {
         source = `^(?!${source}).*$`;
       }
-      const regex = picomatch2.toRegex(source, options);
+      const regex = picomatch2.toRegex(source, options2);
       if (returnState === true) {
         regex.state = state;
       }
       return regex;
     };
-    picomatch2.makeRe = (input, options = {}, returnOutput = false, returnState = false) => {
+    picomatch2.makeRe = (input, options2 = {}, returnOutput = false, returnState = false) => {
       if (!input || typeof input !== "string") {
         throw new TypeError("Expected a non-empty string");
       }
       let parsed = { negated: false, fastpaths: true };
-      if (options.fastpaths !== false && (input[0] === "." || input[0] === "*")) {
-        parsed.output = parse.fastpaths(input, options);
+      if (options2.fastpaths !== false && (input[0] === "." || input[0] === "*")) {
+        parsed.output = parse.fastpaths(input, options2);
       }
       if (!parsed.output) {
-        parsed = parse(input, options);
+        parsed = parse(input, options2);
       }
-      return picomatch2.compileRe(parsed, options, returnOutput, returnState);
+      return picomatch2.compileRe(parsed, options2, returnOutput, returnState);
     };
-    picomatch2.toRegex = (source, options) => {
+    picomatch2.toRegex = (source, options2) => {
       try {
-        const opts = options || {};
+        const opts = options2 || {};
         return new RegExp(source, opts.flags || (opts.nocase ? "i" : ""));
       } catch (err) {
-        if (options && options.debug === true) throw err;
+        if (options2 && options2.debug === true) throw err;
         return /$^/;
       }
     };
@@ -20731,11 +20731,11 @@ var require_picomatch2 = __commonJS({
     "use strict";
     var pico = require_picomatch();
     var utils = require_utils2();
-    function picomatch2(glob, options, returnState = false) {
-      if (options && (options.windows === null || options.windows === void 0)) {
-        options = { ...options, windows: utils.isWindows() };
+    function picomatch2(glob, options2, returnState = false) {
+      if (options2 && (options2.windows === null || options2.windows === void 0)) {
+        options2 = { ...options2, windows: utils.isWindows() };
       }
-      return pico(glob, options, returnState);
+      return pico(glob, options2, returnState);
     }
     Object.assign(picomatch2, pico);
     module.exports = picomatch2;
@@ -20982,9 +20982,9 @@ var Summary = class {
    *
    * @returns {Promise<Summary>} summary instance
    */
-  write(options) {
+  write(options2) {
     return __awaiter(this, void 0, void 0, function* () {
-      const overwrite = !!(options === null || options === void 0 ? void 0 : options.overwrite);
+      const overwrite = !!(options2 === null || options2 === void 0 ? void 0 : options2.overwrite);
       const filePath = yield this.filePath();
       const writeFunc = overwrite ? writeFile : appendFile;
       yield writeFunc(filePath, this._buffer, { encoding: "utf8" });
@@ -21117,8 +21117,8 @@ var Summary = class {
    *
    * @returns {Summary} summary instance
    */
-  addImage(src, alt, options) {
-    const { width, height } = options || {};
+  addImage(src, alt, options2) {
+    const { width, height } = options2 || {};
     const attrs = Object.assign(Object.assign({}, width && { width }), height && { height });
     const element = this.wrap("img", null, Object.assign({ src, alt }, attrs));
     return this.addRaw(element).addEOL();
@@ -21206,20 +21206,20 @@ var ExitCode;
   ExitCode2[ExitCode2["Success"] = 0] = "Success";
   ExitCode2[ExitCode2["Failure"] = 1] = "Failure";
 })(ExitCode || (ExitCode = {}));
-function getInput(name, options) {
+function getInput(name, options2) {
   const val = process.env[`INPUT_${name.replace(/ /g, "_").toUpperCase()}`] || "";
-  if (options && options.required && !val) {
+  if (options2 && options2.required && !val) {
     throw new Error(`Input required and not supplied: ${name}`);
   }
-  if (options && options.trimWhitespace === false) {
+  if (options2 && options2.trimWhitespace === false) {
     return val;
   }
   return val.trim();
 }
-function getBooleanInput(name, options) {
+function getBooleanInput(name, options2) {
   const trueValue = ["true", "True", "TRUE"];
   const falseValue = ["false", "False", "FALSE"];
-  const val = getInput(name, options);
+  const val = getInput(name, options2);
   if (trueValue.includes(val))
     return true;
   if (falseValue.includes(val))
@@ -21260,41 +21260,51 @@ var SKIP = /(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|bun\.lockb?|Car
 function parseDiff(diff) {
   const hunks = [];
   let file = "";
-  let hunk;
+  let header = "";
+  let lines;
   let newLine = 0;
   const flush = () => {
-    if (hunk?.line && !SKIP.test(hunk.file)) {
-      while (hunk.lines.at(-1) === "") hunk.lines.pop();
-      hunks.push({ file: hunk.file, line: hunk.line, text: hunk.lines.join("\n") });
-    }
-    hunk = void 0;
+    if (lines && !SKIP.test(file)) hunks.push(...split(file, header, lines));
+    lines = void 0;
   };
   let previous = "";
-  for (const line of diff.split(/\r?\n/)) {
-    const isHeader = line.startsWith("+++ ") && previous.startsWith("--- ");
-    previous = line;
-    if (line.startsWith("diff --git ")) {
+  for (const raw of diff.split(/\r?\n/)) {
+    const isFileHeader = raw.startsWith("+++ ") && previous.startsWith("--- ");
+    previous = raw;
+    if (raw.startsWith("diff --git ")) {
       flush();
       file = "";
-    } else if (isHeader) {
-      const path = line.slice(4).trim();
+    } else if (isFileHeader) {
+      const path = raw.slice(4).trim();
       file = path === "/dev/null" ? "" : path.replace(/^b\//, "");
-    } else if (line.startsWith("@@")) {
+    } else if (raw.startsWith("@@")) {
       flush();
-      newLine = Number(line.match(/\+(\d+)/)?.[1] ?? 1);
-      if (file) hunk = { file, line: 0, lines: [line] };
-    } else if (hunk) {
-      if (line.startsWith("+")) {
-        hunk.line ||= newLine;
-        newLine++;
-      } else if (line.startsWith(" ") || line === "") {
-        newLine++;
-      }
-      hunk.lines.push(line);
+      header = raw;
+      newLine = Number(raw.match(/\+(\d+)/)?.[1] ?? 1);
+      if (file) lines = [];
+    } else if (lines) {
+      const inNewFile = raw.startsWith("+") || raw.startsWith(" ") || raw === "";
+      lines.push({ raw, newLine: inNewFile ? newLine++ : void 0 });
     }
   }
   flush();
   return hunks;
+}
+function split(file, header, lines) {
+  while (lines.at(-1)?.raw === "") lines.pop();
+  const pieces = [[]];
+  lines.forEach((line, i) => {
+    const code = line.raw.slice(1);
+    const previousBlank = i > 0 && lines[i - 1].raw.slice(1).trim() === "";
+    const topLevel = line.newLine !== void 0 && /^[^\s})\]]/.test(code);
+    if (previousBlank && topLevel && pieces.at(-1).length) pieces.push([]);
+    pieces.at(-1).push(line);
+  });
+  return pieces.flatMap((piece) => {
+    const added = piece.filter((l) => l.raw.startsWith("+") && l.raw.slice(1).trim()).map((l) => ({ line: l.newLine, text: l.raw.slice(1) }));
+    if (!added.length) return [];
+    return [{ file, line: added[0].line, text: [header, ...piece.map((l) => l.raw)].join("\n"), added }];
+  });
 }
 
 // node_modules/.pnpm/@typesafe-ai+sdk@0.6.0/node_modules/@typesafe-ai/sdk/dist/index.mjs
@@ -21409,8 +21419,8 @@ var sleep = (ms, signal) => new Promise((resolve, reject) => {
   signal?.addEventListener("abort", onAbort, { once: true });
 });
 var TypeSafeError = class extends Error {
-  constructor(message, options) {
-    super(message, options);
+  constructor(message, options2) {
+    super(message, options2);
     this.name = new.target.name;
   }
 };
@@ -21487,21 +21497,21 @@ var RateLimitError = class extends APIError {
 var InternalServerError = class extends APIError {
 };
 var APIConnectionError = class extends TypeSafeError {
-  constructor(message = "Connection error.", options) {
-    super(message, options);
+  constructor(message = "Connection error.", options2) {
+    super(message, options2);
   }
 };
 var APITimeoutError = class extends APIConnectionError {
   /** Configured timeout in milliseconds. */
   timeoutMs;
-  constructor(timeoutMs, options) {
-    super(`Request timed out after ${timeoutMs}ms.`, options);
+  constructor(timeoutMs, options2) {
+    super(`Request timed out after ${timeoutMs}ms.`, options2);
     this.timeoutMs = timeoutMs;
   }
 };
 var APIUserAbortError = class extends TypeSafeError {
-  constructor(message = "Request was aborted.", options) {
-    super(message, options);
+  constructor(message = "Request was aborted.", options2) {
+    super(message, options2);
   }
 };
 var LOG_LEVELS = [
@@ -21574,8 +21584,8 @@ var Models = class {
     this.#transport = transport;
   }
   /** List the models available to the account. */
-  list(options = {}) {
-    return this.#transport.request("GET", "/v1/models", options).map(unwrapModels);
+  list(options2 = {}) {
+    return this.#transport.request("GET", "/v1/models", options2).map(unwrapModels);
   }
 };
 var unwrapModels = (wire) => {
@@ -21721,7 +21731,7 @@ var TypeSafeClient = class {
     if (config.fetch === void 0 && typeof globalThis.fetch !== "function") missingFetch();
     this.fetch = config.fetch ?? defaultFetch;
     const transport = {
-      request: (method, path, options) => this.#request(method, path, options),
+      request: (method, path, options2) => this.#request(method, path, options2),
       defaultModel: this.defaultModel
     };
     this.models = new Models(transport);
@@ -21746,27 +21756,27 @@ var TypeSafeClient = class {
   * console.log(answers.billing.noul);
   * ```
   */
-  systemOne(request, options = {}) {
+  systemOne(request, options2 = {}) {
     validateQuestions(request.questions);
     const body = {
       ...request,
       model: request.model ?? this.defaultModel
     };
     return this.#request("POST", "/v1/systemone", {
-      ...options,
+      ...options2,
       body
     });
   }
   /** Send a request and parse its response body. */
-  #request(method, path, options = {}) {
+  #request(method, path, options2 = {}) {
     const resolved = {
       method,
       path,
-      body: options.body,
-      headers: mergeHeaders(this.defaultHeaders, options.headers ?? {}),
-      signal: options.signal,
-      timeout: options.timeout === void 0 ? this.timeout : assertPositiveMs("timeout", options.timeout),
-      retry: resolveRetryPolicy(this.retry, options.retry)
+      body: options2.body,
+      headers: mergeHeaders(this.defaultHeaders, options2.headers ?? {}),
+      signal: options2.signal,
+      timeout: options2.timeout === void 0 ? this.timeout : assertPositiveMs("timeout", options2.timeout),
+      retry: resolveRetryPolicy(this.retry, options2.retry)
     };
     const tag = `#${++this.#requestCount} ${method} ${path}`;
     return new APIPromise(this.fetchWithRetries(tag, resolved), async (res) => {
@@ -21926,47 +21936,83 @@ var isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 var MAX_QUESTIONS = 200;
 var MAX_STATE_CHARS = 6e4;
 var MAX_HUNK_CHARS = 6e3;
+var MAX_CHOICES = 255;
 function question(hunkId, rule) {
   return {
     type: "noul",
-    instructions: `Look only at the diff hunk \`hunks.${hunkId}\`. Lines starting with + were added, lines starting with - were removed, other lines are unchanged context. Does this change clearly violate the rule below? Judge the change itself, not code that was already there.
+    instructions: `Look only at the diff in \`hunks.${hunkId}.diff\`. Lines starting with + were added, lines starting with - were removed, other lines are unchanged context. Does this change clearly violate the rule below? Judge the change itself, not code that was already there.
 
 Rule: ${rule.text}`
   };
 }
 async function judge(hunks, rules, ask) {
-  const work = hunks.map((hunk, i) => ({ id: `h${i}`, hunk, diff: hunk.text.slice(0, MAX_HUNK_CHARS), rules: rules.filter((r) => appliesTo(r, hunk.file)) })).filter((w) => w.rules.length);
+  const work = hunks.map((hunk, i) => ({
+    id: `h${i}`,
+    hunk,
+    diff: hunk.text.slice(0, MAX_HUNK_CHARS),
+    rules: rules.filter((r) => appliesTo(r, hunk.file))
+  })).filter((w) => w.rules.length);
   const batches = [[]];
   let questions = 0;
   let chars = 0;
   for (const w of work) {
-    const current = batches.at(-1);
-    if (current.length && (questions + w.rules.length > MAX_QUESTIONS || chars + w.diff.length > MAX_STATE_CHARS)) {
+    const size = w.diff.length;
+    if (batches.at(-1).length && (questions + w.rules.length > MAX_QUESTIONS || chars + size > MAX_STATE_CHARS)) {
       batches.push([]);
       questions = chars = 0;
     }
     batches.at(-1).push(w);
     questions += w.rules.length;
-    chars += w.diff.length;
+    chars += size;
   }
   const results = await Promise.all(
     batches.map(async (batch) => {
       if (!batch.length) return [];
-      const state = { hunks: Object.fromEntries(batch.map((w) => [w.id, { file: w.hunk.file, diff: w.diff }])) };
+      const state = {
+        hunks: Object.fromEntries(batch.map((w) => [w.id, { file: w.hunk.file, diff: w.diff }]))
+      };
       const questions2 = {};
       batch.forEach((w) => w.rules.forEach((rule, r) => questions2[`${w.id}_r${r}`] = question(w.id, rule)));
       const answers = await ask(state, questions2);
-      return batch.flatMap((w) => w.rules.map((rule, r) => ({ hunk: w.hunk, rule, probability: answers[`${w.id}_r${r}`] ?? 0 })));
+      return batch.flatMap(
+        (w) => w.rules.map((rule, r) => {
+          const answer = answers[`${w.id}_r${r}`];
+          return { hunk: w.hunk, rule, probability: answer?.type === "noul" ? answer.noul : 0, line: w.hunk.line };
+        })
+      );
     })
   );
   return results.flat();
 }
+async function locate(findings, ask) {
+  const multiLine = findings.filter((f) => f.hunk.added.length > 1);
+  if (!multiLine.length) return findings;
+  const state = {
+    findings: Object.fromEntries(
+      multiLine.map((f, i) => [`f${i}`, { file: f.hunk.file, rule: f.rule.text, addedLines: Object.fromEntries(options(f)) }])
+    )
+  };
+  const questions = Object.fromEntries(
+    multiLine.map((f, i) => [
+      `f${i}`,
+      {
+        type: "choice",
+        instructions: `In \`findings.f${i}\`, a change breaks the rule "${f.rule.text}". Which added line is the one that breaks it?`,
+        criteria: Object.fromEntries(options(f).map(([key]) => [key, null]))
+      }
+    ])
+  );
+  const answers = await ask(state, questions);
+  return findings.map((f) => {
+    const i = multiLine.indexOf(f);
+    const answer = i >= 0 ? answers[`f${i}`] : void 0;
+    return answer?.type === "choice" ? { ...f, line: Number(answer.choice.slice(1)) } : f;
+  });
+}
+var options = (f) => f.hunk.added.slice(0, MAX_CHOICES).map((a) => [`L${a.line}`, a.text]);
 function jevAsk(apiKey, model = "jev-latest") {
   const client = new TypeSafeClient({ apiKey, defaultModel: model, retry: { maxRetries: 5 }, timeout: 6e4 });
-  return async (state, questions) => {
-    const { answers } = await client.systemOne({ state, questions });
-    return Object.fromEntries(Object.entries(answers).map(([id, answer]) => [id, answer.noul]));
-  };
+  return async (state, questions) => (await client.systemOne({ state, questions })).answers;
 }
 
 // src/review.ts
@@ -21974,7 +22020,8 @@ var DEFAULT_THRESHOLD = 0.8;
 async function review(diff, rules, ask, threshold = DEFAULT_THRESHOLD) {
   const hunks = parseDiff(diff);
   const judgments = rules.length ? await judge(hunks, rules, ask) : [];
-  const findings = judgments.filter((j) => j.probability >= threshold).sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.hunk.line - b.hunk.line);
+  const confident = judgments.filter((j) => j.probability >= threshold);
+  const findings = (await locate(confident, ask)).sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.line - b.line);
   return { findings, judgments, hunks: hunks.length };
 }
 function commentBody(finding) {
@@ -22040,7 +22087,7 @@ var GitHub = class {
         body: `**softlint** found ${findings.length} change${findings.length === 1 ? "" : "s"} that likely break${findings.length === 1 ? "s" : ""} a rule in \`softlint.json\`.`,
         comments: findings.map((f) => ({
           path: f.hunk.file,
-          line: f.hunk.line,
+          line: f.line,
           side: "RIGHT",
           body: `${commentBody(f)}
 <!-- softlint:${marker(f)} -->`
@@ -22075,7 +22122,7 @@ async function run() {
   const diff = await github.pullRequestDiff(pr.number);
   const { findings, hunks } = await review(diff, rules, jevAsk(apiKey, getInput("model") || void 0), threshold);
   info(`Jev judged ${hunks} hunks \xD7 ${rules.length} rules: ${findings.length} finding(s) at \u2265 ${threshold}.`);
-  for (const f of findings) warning(f.rule.text, { title: `softlint (${Math.round(f.probability * 100)}%)`, file: f.hunk.file, startLine: f.hunk.line });
+  for (const f of findings) warning(f.rule.text, { title: `softlint (${Math.round(f.probability * 100)}%)`, file: f.hunk.file, startLine: f.line });
   const posted = await github.existingMarkers(pr.number);
   const fresh = findings.filter((f) => !posted.has(marker(f)));
   if (fresh.length) {
@@ -22090,7 +22137,7 @@ async function run() {
   if (findings.length) {
     summary.addTable([
       [{ data: "Where", header: true }, { data: "Rule", header: true }, { data: "Jev", header: true }],
-      ...findings.map((f) => [`${f.hunk.file}:${f.hunk.line}`, f.rule.text, `${Math.round(f.probability * 100)}%`])
+      ...findings.map((f) => [`${f.hunk.file}:${f.line}`, f.rule.text, `${Math.round(f.probability * 100)}%`])
     ]);
   } else {
     summary.addRaw("No rule violations found.");

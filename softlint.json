@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/blazejkustra/softlint/main/softlint.schema.json",
   "rules": [
     {
-      "rule": "Every endpoint that reads or changes one user's data must check that the requester is allowed to access that specific record (for example, that it belongs to them), not just that they are logged in.",
+      "rule": "Every endpoint that reads or changes one user's data must check that the requester may access that specific record. Looking a record up by its id alone, without also filtering by the requesting user or their account, breaks this rule.",
       "files": [
         "demo/**"
       ]

@@ -42,7 +42,12 @@ const server = createServer(async (req, res) => {
     const { questions } = JSON.parse(body);
     jevRequests.push(JSON.parse(body));
     const answers = Object.fromEntries(
-      Object.entries<any>(questions).map(([id, q]) => [id, { type: "noul", noul: q.instructions.includes("idempotency") ? 0.95 : 0.05 }]),
+      Object.entries<any>(questions).map(([id, q]) =>
+        q.type === "choice"
+          ? // "Which added line breaks the rule?" → the Stripe call.
+            [id, { type: "choice", choice: "L15", confidence: 0.9, probabilities: {} }]
+          : [id, { type: "noul", noul: q.instructions.includes("idempotency") ? 0.95 : 0.05 }],
+      ),
     );
     return send(200, { model: "jev-test", answers, usage: { input_tokens: 1, output_tokens: 1 } });
   }
@@ -99,19 +104,20 @@ async function runAction(inputs: Record<string, string> = {}) {
 test("reviews the PR: one inline comment on the first added line, plus annotations and a summary", async () => {
   const run = await runAction();
   assert.equal(run.status, 0, run.stdout + run.stderr);
-  assert.equal(jevRequests.length, 1);
-  assert.equal(Object.keys(jevRequests[0].questions).length, 2); // 1 hunk × 2 rules, one request
+  assert.equal(jevRequests.length, 2); // judge (1 hunk × 2 rules), then locate (1 finding)
+  assert.equal(Object.keys(jevRequests[0].questions).length, 2);
+  assert.equal(jevRequests[1].questions.f0.type, "choice");
 
   assert.equal(reviews.length, 1);
   const [comment] = reviews[0].comments;
-  assert.deepEqual([comment.path, comment.line, comment.side], ["billing/refunds.py", 13, "RIGHT"]);
+  assert.deepEqual([comment.path, comment.line, comment.side], ["billing/refunds.py", 15, "RIGHT"]); // the line Jev picked
   assert.match(comment.body, /idempotency key.*95%/s);
   assert.match(comment.body, /<!-- softlint:\w+ -->/);
   assert.equal(reviews[0].commit_id, "abc123");
 
-  assert.match(run.stdout, /::warning title=softlint \(95%25\),file=billing\/refunds\.py,line=13::Refunds must not be retried/);
+  assert.match(run.stdout, /::warning title=softlint \(95%25\),file=billing\/refunds\.py,line=15::Refunds must not be retried/);
   assert.match(run.output, /findings[\s\S]*1/);
-  assert.match(run.summary, /billing\/refunds\.py:13/);
+  assert.match(run.summary, /billing\/refunds\.py:15/);
 });
 
 test("doesn't repeat a comment that's already on the PR", async () => {

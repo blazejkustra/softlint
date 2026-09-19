@@ -1,5 +1,5 @@
 import { parseDiff } from "./diff.js";
-import { judge, type Ask, type Judgment } from "./jev.js";
+import { judge, locate, type Ask, type Judgment } from "./jev.js";
 import type { Rule } from "./rules.js";
 
 export type Finding = Judgment;
@@ -17,9 +17,8 @@ export const DEFAULT_THRESHOLD = 0.8;
 export async function review(diff: string, rules: Rule[], ask: Ask, threshold = DEFAULT_THRESHOLD): Promise<ReviewResult> {
   const hunks = parseDiff(diff);
   const judgments = rules.length ? await judge(hunks, rules, ask) : [];
-  const findings = judgments
-    .filter((j) => j.probability >= threshold)
-    .sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.hunk.line - b.hunk.line);
+  const confident = judgments.filter((j) => j.probability >= threshold);
+  const findings = (await locate(confident, ask)).sort((a, b) => a.hunk.file.localeCompare(b.hunk.file) || a.line - b.line);
   return { findings, judgments, hunks: hunks.length };
 }
 
