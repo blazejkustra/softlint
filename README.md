@@ -2,7 +2,6 @@
   <img src="docs/logo.png" alt="softlint" width="600">
 </p>
 
-<h1 align="center">softlint</h1>
 <p align="center"><strong>Enforce the rules a linter can't.</strong></p>
 
 <p align="center">
