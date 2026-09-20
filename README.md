@@ -6,7 +6,7 @@
 
 <p align="center">
   Plain-English rules, checked on every pull request, in any language.<br>
-  <sub>11 of 11 violations caught and 0 of 11 look-alikes flagged in <a href="examples">the examples</a> · about $0.001 per pull request · a few seconds per run</sub>
+  <sub>10/10 violations caught <a href="https://github.com/blazejkustra/softlint/pull/2/changes">in the example PR</a> · about $0.001 per pull request · a few seconds per run</sub>
 </p>
 
 ![softlint's warnings on a real 14-file pull request](docs/demo.gif)
